@@ -1,48 +1,89 @@
-name: 编译内核a13-5-15
+name: Build Android13 Kernel (5.15.148) - SukiSU Dev
 
 permissions:
-  contents: write  # Allow writing to repository contents (for pushing tags)
-  actions: write   # Allows triggering actions
-  
+  contents: write
+  actions: read
+
 on:
+  push:
+    paths:
+      - .github/workflows/kernel-a13-5.15.yml
   workflow_dispatch:
     inputs:
-      kernelsu_variant:
-        description: "选择 KernelSU"
+      make_release:
+        description: "Create GitHub Release"
         required: true
-        type: choice
-        options:
-          - Official
-          - Next
-          - MKSU
-          - SukiSU
-        default: SukiSU
-      kernelsu_branch:
-        description: "选择 ksu 分支"
+        type: boolean
+        default: true
+      debug_mode:
+        description: "Enable debug symbols"
+        required: false
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      make_release:
         required: true
-        type: choice
-        options:
-          - Stable(标准)
-          - Dev(开发)
-          - Other(其他/指定)
-        default: Dev(开发)
-      kernelsu_branch_other:
-        description: "如果选择了 “其他”，请指定您的自定义分支"
-        required: false
-        type: string  # This input is required if 'Other' is chosen
-      version:
-        description: '自定义版本名(如5.10.196后面的字符)'
-        required: false
-        type: string
+        type: boolean
+        default: true
+
 jobs:
+  build-sukisu-dev:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ["SukiSU"]  # 单变体模式
+        branch: ["Dev"]       # 单分支模式
+        include:
+          - sub_level: "148"
+            os_patch_level: "2024-05"
+            toolchain: "clang-r487747c"
 
-  build-kernel-a13-5-15:
-    uses: ./.github/workflows/kernel-a13-5.15.yml
-    secrets: inherit
-    with:
-      make_release: false
-      kernelsu_variant: ${{ inputs.kernelsu_variant }}
-      kernelsu_branch: ${{ inputs.kernelsu_branch }}
-      kernelsu_branch_other: ${{ inputs.kernelsu_branch_other }}
-      version: ${{ inputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0  # 完整提交历史用于版本注入
 
+      - name: Storage optimization
+        run: |
+          # 创建 80GB 临时构建空间
+          sudo fallocate -l 80G /mnt/kernel-build.img
+          sudo mkfs.ext4 /mnt/kernel-build.img
+          sudo mount /mnt/kernel-build.img $GITHUB_WORKSPACE
+
+      - name: SukiSU Dev setup
+        env:
+          SUKISU_REPO: "https://github.com/SukiSU-project/kernelsu"
+          SUKISU_BRANCH: ${{ matrix.branch }}
+        run: |
+          # 克隆指定分支
+          git clone -b $SUKISU_BRANCH --depth=1 $SUKISU_REPO suksu
+          
+          # 注入版本标识
+          echo "CONFIG_SUKISU_VERSION=$(cd suksu && git describe --tags)" >> .config
+          echo "CONFIG_SUKISU_COMMIT=$(cd suksu && git rev-parse --short HEAD)" >> .config
+
+      - name: Build with Clang
+        uses: ./.github/workflows/gki-kernel.yml
+        with:
+          android_version: "android13"
+          kernel_version: "5.15"
+          sub_level: ${{ matrix.sub_level }}
+          os_patch_level: ${{ matrix.os_patch_level }}
+          variant: ${{ matrix.variant }}
+          toolchain: ${{ matrix.toolchain }}
+          debug: ${{ inputs.debug_mode }}
+
+      - name: Upload artifacts
+        if: ${{ inputs.make_release }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: kernel-${{ matrix.variant }}-${{ matrix.branch }}
+          path: |
+            ${{ github.workspace }}/out/*.img
+            ${{ github.workspace }}/out/*.zip
+          retention-days: 7
