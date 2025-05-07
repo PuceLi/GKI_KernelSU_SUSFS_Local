@@ -13,7 +13,7 @@ on:
       kernelsu_variant:
         required: true
         type: string
-        default: Next
+        default: 下一页
       kernelsu_branch:
         required: true
         type: string
@@ -29,8 +29,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - sub_level: "189"
-          #   os_patch_level: "2023-11"
+          # - sub_level: "66"
+          #   os_patch_level: "2022-06"
           - sub_level: "198"
             os_patch_level: "2024-01"
           - sub_level: "205"
