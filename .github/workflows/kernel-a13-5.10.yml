@@ -31,8 +31,8 @@ jobs:
         include:
           # - sub_level: "189"
           #   os_patch_level: "2023-11"
-          - sub_level: "198"
-            os_patch_level: "2024-01"
+          - sub_level: "66"
+            os_patch_level: "2022-06"
           - sub_level: "205"
             os_patch_level: "2024-03"
           - sub_level: "209"
