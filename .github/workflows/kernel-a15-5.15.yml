@@ -1,4 +1,4 @@
-name: Android 14 5.15
+name: Android 15 5.15
 permissions:
   contents: write  # Allow writing to repository contents (for pushing tags)
   actions: write   # Allows triggering actions
@@ -34,7 +34,7 @@ on:
         default: true
   
 jobs:
-  build-kernel-a14-5-15-kernelsu-susfs:
+  build-kernel-a15-5-15-kernelsu-susfs:
     strategy:
       fail-fast: false
       matrix:
@@ -63,7 +63,7 @@ jobs:
     secrets: inherit
     with:
       make_release: ${{ inputs.make_release || false }}
-      android_version: "android14"
+      android_version: "android15"
       kernel_version: "5.15"
       sub_level: ${{ matrix.sub_level }}
       os_patch_level: ${{ matrix.os_patch_level }}
