@@ -27,7 +27,7 @@ on:
           - Other(其他/指定)
         default: Dev(开发)
       version:
-        description: '自定义版本名(如5.15.167后面的字符/留空则使用默认版本号)'
+        description: '5.15.74'
         required: false
         type: string
       use_zram:
