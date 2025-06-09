@@ -1,7 +1,10 @@
 ### 这是一个自动构建GKI内核的仓库
 
-> 非GKI可以尝试[SukiSU云盘](https://alist.shirkneko.top)的资源
+> 非GKI可以尝试[SukiSU云盘](https://alist.shirkneko.top)的资源，不支持一加ColorOS14、15
+>
 > 第一次使用务必**详细阅读**以下内容，不要因为懒惰而占用他人时间！
+>
+> 最近更新：1.一加8ELITE处理器可使用6.6内核(未测试)、2.修复这些GKI版本编译报错——[5.10.(66、81、101)、5.15.(74、94、104)]
 ### 下载
 可以[在此](https://github.com/zzh20188/GKI_KernelSU_SUSFS/releases)下载您的资源
 1. 关于Anykernel3.zip，下载即用！
@@ -73,18 +76,15 @@ $ fastboot flash boot <boot.img文件全称>
 > **2. 内核版本伪装方法**  
 > 在MT管理器终端执行：
 > ```bash
-> uname -r
+> uname -r | sed 's/^[^-]*//'
 > ```
-> 获取当前内核版本号，将此版本号填入Action编译面板即可实现内核版本伪装。
+> 获取后直接复制，将此版本号填入Action编译面板即可实现内核版本伪装。
 > 
 > **3. 编译优化建议**  
-> 修改 [workflow配置文件](https://github.com/zzh20188/GKI_KernelSU_SUSFS/tree/dev/.github/workflows)（如kernel-a12-5.10.yml）：
+> 修改 [配置文件](.github/workflows/kernel-a12-5.10.yml)（如kernel-a12-5.10.yml）：
 > - ▶️ 删除/注释不需要的GKI版本配置（**加速编译**）
 > - ➕ 添加指定GKI版本（参考[定制指南](https://www.coolapk.com/feed/62820671?shareKey=OGMxYmZmNTk0YzIxNjgxNzM1MzI~&shareUid=11253396&shareFrom=com.coolapk.market_15.2.2)）
-> 
-> **4. 已知兼容性问题**  
-> - 部分GKI版本（如5.10.66）在 `ubuntu-latest` 环境编译失败
-> - 6.6.x内核暂不支持KPM补丁（存在兼容性问题）
+> - 📅 内核构建时间，参照[gki-kernel.yml](.github/workflows/gki-kernel.yml) 文件 **`第490行左右的注释`** 进行修改
 
 ### 更多内容
 可以提及您的意见...我会尝试！
