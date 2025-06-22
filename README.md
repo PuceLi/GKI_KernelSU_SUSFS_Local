@@ -4,15 +4,29 @@
 >
 > 第一次使用务必**详细阅读**以下内容，不要因为懒惰而占用他人时间！
 >
+> 因SUKISU和NEXT已不在维护旧版本susfs的分支，编译时你无论选择Dev或Stable，都是一样的结果
+> 
 > 最近更新：
-> 1. 增加6系快速编译（25分钟），需要在Action面板手动勾选。
-> 2. 恢复KSU-NEXT的Dev编译(但可能随Next更新而失效)，不再是固定的 `12602`版本，到6月17日 20:50为 `12684`。
+> 
+> 1. 增加编译时仅上传Ak3压缩包选项，可以直接下载刷入
+> 2. 由于6.6内核的susfs已更新到1.5.8,但是有严重bug,编译时默认回退到1.5.7
+
+### Tips
+1. 关于安全补丁
+    - 手机设置里的安全补丁时间与GKI内核的安全补丁时间**无关**，请无视它
+2. 关于android版本
+    - 手机系统的安卓版本与GKI内核的安卓版本无关，应当对照手机内核版本的 **android**
+    - 假设手机设置的内核版本为 5.10.66-**android12**-9-00001-g41ff3fa8fop9-ab8161528
+    - 那么你需要刷入[在此](https://github.com/zzh20188/GKI_KernelSU_SUSFS/releases)下载的 **android12**-5.10.66-2022-01-AnyKernel3.zip 文件
+
 ### 下载
 可以[在此](https://github.com/zzh20188/GKI_KernelSU_SUSFS/releases)下载您的资源
 1. 关于Anykernel3.zip，下载即用！
-- 然后使用刷入软件，例如[HorizonKernelFlasher](https://github.com/libxzr/HorizonKernelFlasher/releases)进行刷写内核
+   - 然后使用刷入软件，例如[HorizonKernelFlasher](https://github.com/libxzr/HorizonKernelFlasher/releases)进行刷写内核
 2. 关于boot.img，下载与你内核格式相匹配的（无压缩、gz、lz4），[参考](https://kernelsu.org/zh_CN/guide/installation.html#install-by-kernelsu-boot-image) **找到合适的 boot.img** 一节
-- 使用[FASTBOOT](https://magiskcn.com/)刷入，或者使用刷写软件刷写到ROOT所在插槽的boot分区(例如爱玩机、Kernelflasher)
+    - 使用[FASTBOOT](https://magiskcn.com/)刷入，或者使用刷写软件刷写到ROOT所在插槽的boot分区(例如爱玩机、Kernelflasher)
+
+
 
 ### 支持
 | 功能 | 说明 |
@@ -86,7 +100,7 @@ $ fastboot flash boot <boot.img文件全称>
 > 修改 [配置文件](.github/workflows/kernel-a12-5.10.yml)（如kernel-a12-5.10.yml）：
 > - ▶️ 删除/注释不需要的GKI版本配置（**加速编译**）
 > - ➕ 添加指定GKI版本（参考[定制指南](https://www.coolapk.com/feed/62820671?shareKey=OGMxYmZmNTk0YzIxNjgxNzM1MzI~&shareUid=11253396&shareFrom=com.coolapk.market_15.2.2)）
-> - 📅 内核构建时间，参照[gki-kernel.yml](.github/workflows/gki-kernel.yml) 文件 **`第490行左右的注释`** 进行修改
+> - 📅 内核构建时间，参照[gki-kernel.yml](.github/workflows/gki-kernel.yml) 文件 **`第500行左右的注释`** 进行修改
 
 ### 更多内容
 可以提及您的意见...我会尝试！
