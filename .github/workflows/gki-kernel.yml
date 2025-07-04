@@ -606,7 +606,7 @@ jobs:
                         Kversion="${Android}${Random_hash}"
                       fi
                       echo $Kversion
-                      sed -i "\$s|echo \"\$res\"|echo \"$Kversion\"|" ./common/scripts/setlocalversion                  
+                      sed -i "\$s|echo \"\$res\"|echo \"-android14-11-glwd7ng8rpknp\"|" ./common/scripts/setlocalversion                  
                       ;;
                   "6.6")
                       echo "进入6.6 内核名称编辑"
@@ -632,7 +632,10 @@ jobs:
               echo "KVERSION=$Kversion" >> $GITHUB_ENV
               echo "查看内核名是否正确"
               tail -n 3 ./common/scripts/setlocalversion
-
+              
+              cd common
+              git add .
+              git commit -m "init"
       - name: Build with retry
         uses: nick-fields/retry@v3
         with:
