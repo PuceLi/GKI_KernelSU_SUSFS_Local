@@ -227,7 +227,31 @@ jobs:
           echo '补丁加入构建'
           echo "obj-y += hmbird_patch.o" >> Makefile
           tail -n 3 Makefile
-      
+
+      - name: Fix Bluetooth and WiFi on Samsung GKI 6.6 devices
+        run: |
+          if [[ "${{ inputs.kernel_version }}" = "6.6" ]]; then
+            echo "Switch to kernel directory"
+            echo "Adding new symbols definitions to GKI symbol lists"
+            cd "$CONFIG/common/"
+            echo "Current directory is $(pwd), downloading patches"
+            curl -LSs "https://github.com/zzh20188/GKI_KernelSU_SUSFS/raw/refs/heads/dev/add_min_kdp_symbols.patch" -o add_min_kdp_symbols.patch
+            patch -p1 < add_min_kdp_symbols.patch
+            echo "Switch to the driver directory"
+            cd "$CONFIG/common/drivers/"
+            echo "Adding min_kdp driver"
+            echo "Current directory is $(pwd), downloading patches"
+            curl -LSs "https://github.com/zzh20188/GKI_KernelSU_SUSFS/raw/refs/heads/dev/min_kdp.c" -o min_kdp.c
+            if [ ! -f min_kdp.c ]; then
+              echo "min_kdp.c download failed"
+            fi
+            echo "Patches added to build"
+            echo "obj-y += min_kdp.o" >> Makefile
+            tail -n 3 Makefile
+          else
+            echo "Skipping min_kdp patches as kernel_version < 6.6"
+          fi
+
       - name: 确定 KernelSU 的分支
         run: |
 
