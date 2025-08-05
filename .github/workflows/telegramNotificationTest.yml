@@ -1,0 +1,21 @@
+name: Test Telegram Notification
+
+on:
+  workflow_dispatch:  # Cho phép anh chạy thủ công từ GitHub UI
+
+env:
+  RELEASE_NAME: "Test Kernel" 
+  RELEASE_NOTE: "Đây là bản test gửi thông báo Telegram nhe~"
+  NEW_TAG: "vTestTag"
+
+jobs:
+  send-telegram:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Gửi thông báo Telegram
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ env.TELEGRAM_TOKEN }}/sendMessage \
+          -d chat_id=${{ env.TELEGRAM_CHAT_ID }} \
+          -d text="🎉 *Kernel mới đã được phát hành!*%0A📝 *Tên:* ${{ env.RELEASE_NAME }}%0A📄 *Ghi chú:* ${{ env.RELEASE_NOTE }}%0A🔗 [Bấm vào đây để xem release](https://github.com/${{ github.repository }}/releases/tag/${{ env.NEW_TAG }})" \
+          -d parse_mode=Markdown
