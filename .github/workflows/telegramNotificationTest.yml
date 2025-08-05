@@ -15,7 +15,8 @@ jobs:
     steps:
       - name: Gửi thông báo Telegram
         run: |
-          curl -s -X POST https://api.telegram.org/bot${{ env.TELEGRAM_TOKEN }}/sendMessage \
-          -d chat_id=${{ env.TELEGRAM_CHAT_ID }} \
-          -d text="🎉 *Kernel mới đã được phát hành!*%0A📝 *Tên:* ${{ env.RELEASE_NAME }}%0A📄 *Ghi chú:* ${{ env.RELEASE_NOTE }}%0A🔗 [Bấm vào đây để xem release](https://github.com/${{ github.repository }}/releases/tag/${{ env.NEW_TAG }})" \
-          -d parse_mode=Markdown
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d parse_mode=Markdown \
+            -d text="🎉 *Build hoàn tất!*%0A🧪 Đây là bản test xuống dòng nè~%0A✅ Dòng 3 nè%0A❤"
+
