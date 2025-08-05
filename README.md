@@ -1,10 +1,15 @@
-### Đây là một repo tự động giúp bạn build Kernel GKI + patch sẵn SUSFS!
-> Vui lòng **đọc** kỹ nội dung trong file README.md này trước khi sử dụng lần đầu, đừng làm mất thời gian của người khác vì sự lười biếng của bạn!
->  - Vì SukiSU và KernelSU NEXT không còn duy trì các nhánh susfs cũ nữa nên cho dù bạn chọn Dev hay Stable khi build, các file cho ra sẽ là giống nhau.
-> 
+### build Kernel GKI + patch sẵn SUSFS!
+
 > Cập nhật mới:
 > - Đã sửa lại lỗi không nhận KSU Manager của KernelSU Next, nếu vẫn còn lỗi này, xin hãy tải xuống gói KernelSU Next Manager này [KSU_Next_v1.0.9_12797](https://github.com/KernelSU-Next/KernelSU-Next/releases/download/v1.0.9/KernelSU_Next_v1.0.9_12797-release.apk)!
-> - Thêm phần đặt tên cho kernel khi hiển thị trong Ksu Manager, ví dụ 5.15.148-KittyKernel, xin hãy fork về GitHub của bạn trước khi sử dụng tính năng này.
+
+### Mẹo nhỏ
+1. Về bản vá bảo mật
+- Thời gian bản vá bảo mật trong cài đặt điện thoại không liên quan gì đến thời gian bản vá bảo mật của hạt nhân GKI, vui lòng bỏ qua.
+2. Về phiên bản Android
+- Phiên bản Android của hệ thống điện thoại không liên quan gì đến phiên bản Android của hạt nhân GKI, và nên được so sánh với phiên bản **android** của phiên bản hạt nhân điện thoại.
+- Giả sử phiên bản hạt nhân do điện thoại đặt là 5.10.66-**android12**-9-00001-g41ff3fa8fop9-ab8161528.
+- Sau đó, bạn cần flash tệp **android12**-5.10.66-2022-01-AnyKernel3.zip đã tải xuống [tại đây](https://github.com/nguyensu66/GKI_KernelSU_SUSFS/releases)
 
 ### Hỗ trợ
 | Chức năng | Mô tả |
@@ -13,47 +18,7 @@
 | [SUSFS4](https://gitlab.com/simonpunk/susfs4ksu) | Hỗ trợ các bản vá chức năng ẩn KSU ở cấp độ kernel |
 | [BBR](https://blog.thinkin.top/archives/ke-pu-bbrdao-di-shi-shi-me) | Thuật toán kiểm soát TCP |
 | [Wireguard](https://zh.wikipedia.org/wiki/WireGuard) | Tham khảo liên kết wiki bên trái |
-| [LZ4KD](https://github.com/ShirkNeko/SukiSU_patch/tree/main/other) | Thuật toán ZRAM từ nguồn HUAWEI, bản vá được chuyển bởi [雲雲之枫](http://www.coolapk.com/u/24963680) |
-
-### Hướng dẫn sử dụng
-Có 2 cách để bạn có thể sử dụng repo này:
-1. Fork repo này về Github của bạn và tự build
-
--  Đầu tiên hãy clone repo về GitHub của bạn
-  
-<img src="./.guide/gki_kernelsu_susfs_pic1.PNG" size="10%">
-
--  Tiếp theo thay thông tin và nhấn Create Fork
-  
-<img src="./.guide/gki_kernelsu_susfs_pic2.PNG" size="10%">
-
--  Sau đớ nhấn vào Action
-
-<img src="./.guide/gki_kernelsu_susfs_pic3.PNG" size="10%">
-
--  Nhấn chọn Build Kernel and Release
-  
-<img src="./.guide/gki_kernelsu_susfs_pic4.PNG" size="10%">
-
--  Chọn Run Workflow
-  
-<img src="./.guide/gki_kernelsu_susfs_pic5.PNG" size="10%">
-
-- Thay đổi thông tin theo nhu cầu của bạn, sau đó nhấn Run Workflow
-
-<img src="./.guide/gki_kernelsu_susfs_pic6.PNG" size="10%">
-
-- Sau khi build xong, nhấn lại vào workflow bạn đã chạy
-
-<img src="./.guide/gki_kernelsu_susfs_pic7.PNG" size="10%">
-
-- Tìm bản kernel phù hợp với thiết bị của bạn rồi tải nó xuống
-
-<img src="./.guide/gki_kernelsu_susfs_pic8.PNG" size="10%">
-
-2. Tải trục tiếp kernel đã build sẵn ở mục Release
-Bạn có thể tải xuống tài nguyên [tại đây](https://github.com/trnthanhhuy/GKI_KernelSU_SUSFS/releases)
-- Hãy tải phiên bản kernel đúng với máy của bạn, nếu không đũng phiên bản, thiết bị có thể bị lỗi, glitch hay nặng hơn có thể bị Bootloop
+| [LZ4KD](https://github.com/ShirkNeko/SukiSU_patch/tree/main/other) | Thuật toán ZRAM từ nguồn HUAWEI, bản vá được chuyển bởi [雲雲之枫](http://www.coolapk.com/u/24963680)
 
 > ### Hướng dẫn chọn phiên bản kernel
 
@@ -66,8 +31,8 @@ Bạn có thể tải xuống tài nguyên [tại đây](https://github.com/trnt
 
 ### Hướng dãn cài đặt
 
-- Hãy tải xuống phiên bản kernel đã được đề cập ở phần hướng dẫn sử dụng, sau đó hãy thực hiện việc chuẩn bị file backup boot, xem hướng dẫn [tại đây](https://magiskcn.com/payload-dumper-go-boot.html) hoặc tạo bản backup bằng custom recovery như OrangeFox hay TWRP trước khi thực hiện các bước tiếp theo.
-    - Nếu sử dụng phiên bản Anykernel, chỉ cần flash như file zip bằng custom recovery như OrangeFox hay TWRP, việc còn lại hãy để Anykernel thực hiện. Sau khi flash xong hãy khởi động lại và kernel đã sẵn sàng để bạn sử dụng.
+- Hãy tải xống phiên bản kernel đã được đề cập ở phần hướng dẫn sử dụng, sau đó hãy thực hiện việc chuẩn bị file backup boot, xem hướng dẫn [tại đây](https://magiskcn.com/payload-dumper-go-boot.html) hoặc tạo bản backup bằng custom recovery như OrangeFox hay TWRP trước khi thực hiện các bước tiếp theo.
+    - Nếu sử dụng phiên bản Anykernel, chỉ cần flash như file zip bằng custom recovery như OrangeFox hay TWRP hoặc [HorizonKernelFlasher](https://github.com/libxzr/HorizonKernelFlasher/releases), việc còn lại hãy để Anykernel thực hiện. Sau khi flash xong hãy khởi động lại và kernel đã sẵn sàng để bạn sử dụng.
     - Nếu sử dụng file boot, kiểm tra xem thiết bị của bạn đang sử dụng loại boot là không nén, lz4 hay gz. Chi tiết xem [tại đây](https://kernelsu.org/guide/installation.html#install-by-kernelsu-boot-image). Cuối cùng hãy dùng lệnh 'fastboot flash boot "tên_file_boot.img"'. Tuyệt đối không sử dụng lệnh 'fastboot boot "tên_file_boot"', nó sẽ khiến thiết bị của bạn bị Bootloop. Sau khi flash xong, hãy khởi động lại và kernel đã sẵn sàng để bạn sử dụng.
 
 - Xử lý khi bạn bị "Bootloop"
@@ -85,8 +50,8 @@ Bạn có thể tải xuống tài nguyên [tại đây](https://github.com/trnt
 - và còn rất nhiều người đã commit, sửa chữa và phát triển nữa. Cảm ơn tất cả các bạn! <3
 
 ### Liên hệ với tôi!
-Bạn có thể nêu ý kiến của mình...Tôi sẽ thử! \n
-Bạn có thể tạo issue ngay tại trên repo này, hoặc nhắn tin đến Telegram của tôi [tại đây](https://t.me/trnthanhhuy) \n
+Bạn có thể nêu ý kiến của mình...Tôi sẽ thử!
+Bạn có thể tạo issue ngay tại trên repo này, hoặc nhắn tin đến Telegram của tôi [tại đây](https://t.me/nguyensu666)
 Cảm ơn tất cả mọi người đã đọc hết trang README.md này!
 
 
