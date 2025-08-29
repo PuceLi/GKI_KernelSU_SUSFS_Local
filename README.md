@@ -1,123 +1,55 @@
-### 这是一个自动构建GKI内核的仓库
+### build Kernel GKI + patch sẵn SUSFS!
 
-> 非GKI可以尝试[SukiSU云盘](https://alist.shirkneko.top)的资源，不支持一加ColorOS14、15
->
-> 第一次使用务必**详细阅读**以下内容，不要因为懒惰而占用他人时间！
->
-> 因SUKISU和NEXT已不在维护旧版本susfs的分支，编译时你无论选择Dev或Stable，都是一样的结果；
->且mksu也无标准/开发版本概念，无论选择哪个都一样，但（KSU的稳定版是最新TAG，也就是[v1.0.5](https://github.com/tiann/KernelSU/tree/v1.0.5)，4月22日发布的那个）
-> 
-> 最近更新：
-> 1. 添加 6.1.57内核版本
-> 2. 移除内核BBR等配置
-> 3. KPROBES(KSU/MKSU)和VFS(NEXT/SUKISU)钩子区分标注
+> Cập nhật mới:
+> - Đã sửa lại lỗi không nhận KSU Manager của KernelSU Next, nếu vẫn còn lỗi này, xin hãy tải xuống gói KernelSU Next Manager này [KSU_Next_v1.0.9_12797](https://github.com/KernelSU-Next/KernelSU-Next/releases/download/v1.0.9/KernelSU_Next_v1.0.9_12797-release.apk)!
 
-### 无限重启？
-1. 一加：colorOS15魔改过f2fs，已经不兼容GKI的f2fs，除非进入rec清除Data重启
-2. 小米：一些机型因为启动引导因avb验证导致无法启动分区，如红米k50，需要关闭avb验证（https://magiskcn.com/disable-avb）
-3. 其他：其他手机也可能因为相似的兼容问题，如果有可以补充。。。
+### Mẹo nhỏ
+1. Về bản vá bảo mật
+- Thời gian bản vá bảo mật trong cài đặt điện thoại không liên quan gì đến thời gian bản vá bảo mật của hạt nhân GKI, vui lòng bỏ qua.
+2. Về phiên bản Android
+- Phiên bản Android của hệ thống điện thoại không liên quan gì đến phiên bản Android của hạt nhân GKI, và nên được so sánh với phiên bản **android** của phiên bản hạt nhân điện thoại.
+- Giả sử phiên bản hạt nhân do điện thoại đặt là 5.10.66-**android12**-9-00001-g41ff3fa8fop9-ab8161528.
+- Sau đó, bạn cần flash tệp **android12**-5.10.66-2022-01-AnyKernel3.zip đã tải xuống [tại đây](https://github.com/nguyensu66/GKI_KernelSU_SUSFS/releases)
 
-### Tips
-1. 关于安全补丁
-    - 手机设置里的安全补丁时间与GKI内核的安全补丁时间**无关**，请无视它
-2. 关于android版本
-    - 手机系统的安卓版本与GKI内核的安卓版本无关，应当对照手机内核版本的 **android**
-    - 假设手机设置的内核版本为 5.10.66-**android12**-9-00001-g41ff3fa8fop9-ab8161528
-    - 那么你需要刷入[在此](https://github.com/zzh20188/GKI_KernelSU_SUSFS/releases)下载的 **android12**-5.10.66-2022-01-AnyKernel3.zip 文件
-
-### 下载
-可以[在此](https://github.com/zzh20188/GKI_KernelSU_SUSFS/releases)下载您的资源
-1. 关于Anykernel3.zip，下载即用！
-   - 然后使用刷入软件，例如[HorizonKernelFlasher](https://github.com/libxzr/HorizonKernelFlasher/releases)进行刷写内核
-2. 关于boot.img，下载与你内核格式相匹配的（无压缩、gz、lz4），[参考](https://kernelsu.org/zh_CN/guide/installation.html#install-by-kernelsu-boot-image) **找到合适的 boot.img** 一节
-    - 使用[FASTBOOT](https://magiskcn.com/)刷入，或者使用刷写软件刷写到ROOT所在插槽的boot分区(例如爱玩机、Kernelflasher)
-
-
-
-### 支持
-| 功能 | 说明 |
+### Hỗ trợ
+| Chức năng | Mô tả |
 | --- | --- |
-| [KernelSU](https://kernelsu.org/zh_CN/) | 包括**原版、MKSU、SUKISU、NEXT** |
-| [SUSFS4](https://gitlab.com/simonpunk/susfs4ksu) | 在内核层面辅助KSU隐藏的功能补丁 |
-| [LZ4KD](https://github.com/ShirkNeko/SukiSU_patch/tree/main/other) | 听说是来自HUAWEI source的ZRAM算法，补丁由[云彩之枫](http://www.coolapk.com/u/24963680)移植 |
-| [LZ4 1.10.0](https://github.com/lz4/lz4/releasesr) | GKI内核默认的LZ4算法升级 |
+| [KernelSU](https://kernelsu.org/zh_CN/) | Bao gồm **Official, MKSU, SUKISU, NEXT** |
+| [SUSFS4](https://gitlab.com/simonpunk/susfs4ksu) | Hỗ trợ các bản vá chức năng ẩn KSU ở cấp độ kernel |
+| [BBR](https://blog.thinkin.top/archives/ke-pu-bbrdao-di-shi-shi-me) | Thuật toán kiểm soát TCP |
+| [Wireguard](https://zh.wikipedia.org/wiki/WireGuard) | Tham khảo liên kết wiki bên trái |
+| [LZ4KD](https://github.com/ShirkNeko/SukiSU_patch/tree/main/other) | Thuật toán ZRAM từ nguồn HUAWEI, bản vá được chuyển bởi [雲雲之枫](http://www.coolapk.com/u/24963680)
 
-<details>
+> ### Hướng dẫn chọn phiên bản kernel
 
-<summary>还支持这几种算法，可在scene的ZRAM切换</summary>
+> Tất nhiên rằng tôi rất khuyến khích bạn sử dụng phiên bản kernel cùng với kernel của thiết bị, nhưng nếu bạn không thể tìm thấy phiên bản của mình, bạn có thể thử cách dưới đây
+> 1. Khi phiên bản chính GKI của điện thoại là 5.10.x (chẳng hạn như 5.10.168), bạn có thể flash kernel với phiên bản phụ cao hơn của cùng phiên bản chính (chẳng hạn như 5.10.198).
+> 2. Về phiên bản **X-lts**, hãy lấy `android12-5.10.X-lts-AnyKernel3.zip` làm ví dụ:
+> - **X-lts** biểu thị phiên bản hỗ trợ dài hạn (số phiên bản phụ là lớn nhất, ví dụ hiện tại là 5.10.238)
+> - LTS Khi mã nguồn GKI được cập nhật, số phiên bản đã biên dịch sẽ tiếp tục tăng (các phiên bản khác như 198 đã được sửa vĩnh viễn)
+> - Lưu ý: Mặc dù LTS là phiên bản mới nhất, **nhưng** phiên bản mới nhất ≠ ổn định nhất (chẳng hạn như 6.6.x có LỖI tự động khởi động lại)
 
-### LZ4K、LZ4HC、deflate、842、~~zstdn~~、lz4k_oplus
+### Hướng dãn cài đặt
 
-</details>
+- Hãy tải xống phiên bản kernel đã được đề cập ở phần hướng dẫn sử dụng, sau đó hãy thực hiện việc chuẩn bị file backup boot, xem hướng dẫn [tại đây](https://magiskcn.com/payload-dumper-go-boot.html) hoặc tạo bản backup bằng custom recovery như OrangeFox hay TWRP trước khi thực hiện các bước tiếp theo.
+    - Nếu sử dụng phiên bản Anykernel, chỉ cần flash như file zip bằng custom recovery như OrangeFox hay TWRP hoặc [HorizonKernelFlasher](https://github.com/libxzr/HorizonKernelFlasher/releases), việc còn lại hãy để Anykernel thực hiện. Sau khi flash xong hãy khởi động lại và kernel đã sẵn sàng để bạn sử dụng.
+    - Nếu sử dụng file boot, kiểm tra xem thiết bị của bạn đang sử dụng loại boot là không nén, lz4 hay gz. Chi tiết xem [tại đây](https://kernelsu.org/guide/installation.html#install-by-kernelsu-boot-image). Cuối cùng hãy dùng lệnh 'fastboot flash boot "tên_file_boot.img"'. Tuyệt đối không sử dụng lệnh 'fastboot boot "tên_file_boot"', nó sẽ khiến thiết bị của bạn bị Bootloop. Sau khi flash xong, hãy khởi động lại và kernel đã sẵn sàng để bạn sử dụng.
 
-### KSU管理器 & SUSFS模块
-由于一些原因，你不可缺少最新管理器和模块(见下)
-> ##### 如果长期不更新管理器，而只更新内核也就是使用ak3刷入，那么软件显示可能异常，会显得你和别人不一样，如SUKISU显示LKM，NEXT一些参数显示未知
-> ##### SUKISU内置SUSFS功能相对模块，缺失try mount/umount数量显示功能，以及自定义界面的一些选项
-#### 在编译完成后，你会看到类似 `SukiSU-Manager(13235)` 和 `susfs-release-1.5.2+_537cdba` 的压缩包，简单来说这就是与内核一同上传的***最新管理器与susfs模块***。
+- Xử lý khi bạn bị "Bootloop"
+   -  Nếu bạn chuẩn bị file boot từ trước, bạn chỉ cần flash lại file boot đó bằng lệnh 'fastboot flash boot "tên_file_backupboot.img"' và nó sẽ hoạt động.
+   -  Nếu bạn đã backup bằng OrangeFox hay TWRP, đơn giản chỉ cần flash lại bản backup đó và khởi động lại, và bạn sẽ thoát khỏi bootloop.
+   -  Nếu bạn không chuẩn bị bất cứ thứ gì ở trên, rất tiếc, bạn có thể sẽ phải flash lại bản rom mà bạn đang dùng, dữ liệu của bạn sẽ bị mất khi bạn flash lại rom.
 
-![例子](./assets/action.png)
+### Cảm ơn!
+- @tiann - my goatt! <3 -  [KernelSU](https://github.com/tiann/KernelSU)
+- @rifsxd - cảm ơn bạn về KernelSU Next - [KernelSU Next](https://github.com/KernelSU-Next/KernelSU-Next)
+- @ShirkNeko - cảm ơn bạn về SukiSU Ultra - [SukiSU Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra)
+- @simonpunk - cảm ơn bạn về module SUSFS - [susfs4ksu](https://gitlab.com/simonpunk/susfs4ksu)
+- @zzh20188 - cảm ơn bạn về Original Repository, xem tại đây: [GKI_KernelSU_SUSFS](https://github.com/zzh20188/GKI_KernelSU_SUSFS)
+- @TheWildJames - cảm ơn bạn về AnyKernel3, xem tại đây: [GKI_KernelSU_SUSFS](https://github.com/WildKernels/GKI_KernelSU_SUSFS)
+- và còn rất nhiều người đã commit, sửa chữa và phát triển nữa. Cảm ơn tất cả các bạn! <3
 
-#### 同样的，在[Release](https://github.com/zzh20188/GKI_KernelSU_SUSFS/releases)的底部也同样包含它们
-
-![release](./assets/release.png)
-
-
-### 内核构建时间
-在构建内核时，可以指定内核的构建时间。在Action的输入框中输入指定格式的字符即可。
-如：**Thu Jul 17 14:26:50 UTC 2025**
-> 这个时间表示的是2025年7月17日的14:26:50（协调世界时间，UTC）。
-当你没有输入指定时间，则为构建内核时的时间
-
-
-### 紧急救援指南
-
-> [!IMPORTANT]
-> **触发条件**  
-> 当设备因以下原因无法启动时需执行救援：  
-> - 刷入错误/不兼容的内核
-> - 内核版本适配异常（如5.10.66刷233版本的内核）
-1. 进入FASTBOOT模式
-
-- 物理键组合：电源+音量- 或者 ADB命令： `adb reboot bootloader`
-
-2. 执行刷写命令
-```bash
-$ fastboot flash boot <boot.img文件全称>
-```
-### 原版镜像获取途径
-1. 从现有固件提取
-
-- 卡刷包：解压后使用[payload-dumper工具](https://magiskcn.com/payload-dumper-go-boot.html)
-
-- 线刷包：直接解压获取boot.img
-
-2.外部资源获取
-
-- 社区平台搜索：机型+原厂boot (如XDA/酷安)
-
-- [移动端在线提取远程获取](https://magiskcn.com/payload-dumper-compose.html)
-
-> [!TIP]
-> ### 内核版本兼容性说明
-> 
-> **1. 跨子版本刷机规则**  
-> 当手机GKI主版本为5.10.x时（如5.10.168），可刷写同主版本更高子版本的内核（如5.10.198）。  
-> 关于**X-lts**版本，以 `android12-5.10.X-lts-AnyKernel3.zip` 为例：
-> - **X-lts** 表示长期支持版（子版本号最大，当前示例为5.10.238）
-> - LTS随着GKI源码更新，编译版本号将持续递增（其他如198的版本，是永久固定的）
-> - ⚠️ 注意：LTS虽为最新，**但**最新版≠最稳定（如6.6.x存在自动重启BUG）
-> 
-> **2. 内核版本伪装方法**  
-> 在MT管理器终端执行：
-> ```bash
-> uname -r | sed 's/^[^-]*//'
-> ```
-> 获取后直接复制，将此版本号填入Action编译面板即可实现内核版本伪装。
-> 
-> **3. 编译优化建议**  
-> 修改 [配置文件](.github/workflows/kernel-a12-5.10.yml)（如kernel-a12-5.10.yml）：
-> - ▶️ 删除/注释不需要的GKI版本配置（**加速编译**）
-
-### 更多内容
-可以提及您的意见...我会尝试！
+### Liên hệ với tôi!
+Bạn có thể nêu ý kiến của mình...Tôi sẽ thử!
+Bạn có thể tạo issue ngay tại trên repo này, hoặc nhắn tin đến Telegram của tôi [tại đây](https://t.me/nguyensu666)
+Cảm ơn tất cả mọi người đã đọc hết trang README.md này!
