@@ -51,7 +51,7 @@
 
 ### Liên hệ với tôi!
 Bạn có thể nêu ý kiến của mình...Tôi sẽ thử!
-Bạn có thể tạo issue ngay tại trên repo này, hoặc nhắn tin đến Telegram của tôi [tại đây](https://t.me/nguyensu666)
+Bạn có thể tạo issue ngay tại trên repo này, hoặc nhắn tin đến Telegram của tôi [tại đây](https://t.me/Meowkernel)
 Cảm ơn tất cả mọi người đã đọc hết trang README.md này!
 
 
