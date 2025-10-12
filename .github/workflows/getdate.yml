@@ -1,0 +1,6 @@
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get timestamp from environment variable
+      run: echo "The runner timestamp is $RUNNER_TIMESTAMP"
