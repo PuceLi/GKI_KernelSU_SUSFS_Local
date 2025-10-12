@@ -40,7 +40,6 @@ on:
         description: '自定义版本名(如5.10.198后面的字符/留空则使用默认版本号)'
         required: false
         type: string
-        default: "-autobuilt-Joe"
       use_zram:
         description: '是否开启增加更多ZRAM算法?'
         required: true
