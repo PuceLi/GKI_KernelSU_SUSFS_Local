@@ -86,6 +86,10 @@ jobs:
       - name: Trigger test_release.yml workflow
         if: steps.compare.outputs.new_commit == 'true'
         run: |
+          # Compute today's date in MMDDYYYY format and build version string
+          TODAY=$(date +"%m%d%Y")
+          VERSION="-${TODAY}-BBG-Joe"
+
           curl -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
@@ -97,7 +101,7 @@ jobs:
                 "make_release": "true",
                 "kernelsu_variant": "SukiSU",
                 "kernelsu_branch": "Stable(标准)",
-                "version": "",
+                "version": "'"${VERSION}"'",
                 "use_zram": "true",
                 "use_bbg": "true",
                 "use_kpm": "true",
