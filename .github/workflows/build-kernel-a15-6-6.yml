@@ -49,6 +49,11 @@ on:
         required: true
         type: boolean
         default: true
+      supp_op:
+        description: 'Enable support for OnePlus 8E processor models? (No need to check this box if your device is not this model)'
+        required: false
+        type: boolean
+        default: false
       get_manager:
         description: 'Build APP root + susfs'
         required: true
