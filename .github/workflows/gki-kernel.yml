@@ -290,9 +290,9 @@ jobs:
           fi
       
       - name: SUKISU管理器信息
-          if: ${{ inputs.kernelsu_variant == 'SukiSU' }}
-          run: |
-            MANAGER_STR="HzzMonet"
+        if: ${{ inputs.kernelsu_variant == 'SukiSU' }}
+        run: |
+         MANAGER_STR="HzzMonet"
            # echo "Fixing MANAGER_STR to: $MANAGER_STR"
             cd "$CONFIG/KernelSU"
             sed -i '/rev-parse --short=8 HEAD/d' ./kernel/Makefile
