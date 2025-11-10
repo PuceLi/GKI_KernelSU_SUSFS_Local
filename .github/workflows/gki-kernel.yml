@@ -292,12 +292,12 @@ jobs:
       - name: SUKISU管理器信息
           if: ${{ inputs.kernelsu_variant == 'SukiSU' }}
           run: |
-            if [ ! -z "${{ vars.MANAGER_STR }}" ]; then
-              cd "$CONFIG/KernelSU"
-              sed -i '/rev-parse --short=8 HEAD/d' ./kernel/Makefile
-              echo 'LOCALVERSION := HzzMonet' >> ./kernel/Makefile
-              sed -n '50,60p' ./kernel/Makefile
-            fi
+            MANAGER_STR="HzzMonet"
+           # echo "Fixing MANAGER_STR to: $MANAGER_STR"
+            cd "$CONFIG/KernelSU"
+            sed -i '/rev-parse --short=8 HEAD/d' ./kernel/Makefile
+            echo 'LOCALVERSION := HzzMonet' >> ./kernel/Makefile
+            sed -n '50,60p' ./kernel/Makefile
       - name: 为 KernelSU 变体安装 SUSFS 补丁
         run: |
           echo "更改为配置目录: $CONFIG..."
