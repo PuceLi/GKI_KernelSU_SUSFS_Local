@@ -8,7 +8,8 @@ on:
   workflow_dispatch:
     inputs:
       kernelsu_variant:
-        description: "选择 KernelSU"
+        # description: "选择 KernelSU | 注意:选中MKSU时为标准版"
+        description: "Choose KernelSU"
         required: true
         type: choice
         options:
@@ -18,7 +19,7 @@ on:
           - SukiSU
         default: SukiSU
       kernelsu_branch:
-        description: "选择 ksu 分支"
+        description: "Nhánh ksu"
         required: true
         type: choice
         options:
@@ -26,6 +27,10 @@ on:
           - Dev(开发)
           - Other(其他/指定)
         default: Stable(标准)
+      # kernelsu_branch_other:
+      #   description: "如果选择了 “其他”，请指定您的自定义分支"
+      #   required: false
+      #   type: string  # This input is required if 'Other' is chosen
       version:
         description: 'Custom kernel version name (Ex: Characters after 5.10.198 or leave blank to use default kernel version uname)'
         required: false

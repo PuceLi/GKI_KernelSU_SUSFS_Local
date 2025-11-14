@@ -9,7 +9,7 @@ on:
     inputs:
       kernelsu_variant:
         # description: "选择 KernelSU | 注意:选中MKSU时为标准版"
-        description: "选择 KernelSU"
+        description: "Choose KernelSU"
         required: true
         type: choice
         options:
@@ -19,7 +19,7 @@ on:
           - SukiSU
         default: SukiSU
       kernelsu_branch:
-        description: "选择 ksu 分支"
+        description: "Nhánh ksu"
         required: true
         type: choice
         options:
