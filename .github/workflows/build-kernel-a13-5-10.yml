@@ -8,8 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       kernelsu_variant:
-        # description: "选择 KernelSU | 注意:选中MKSU时为标准版"
-        description: "Choose KernelSU"
+        description: "选择 KernelSU"
         required: true
         type: choice
         options:
@@ -19,7 +18,7 @@ on:
           - SukiSU
         default: SukiSU
       kernelsu_branch:
-        description: "Nhánh ksu"
+        description: "选择 ksu 分支"
         required: true
         type: choice
         options:
@@ -27,44 +26,39 @@ on:
           - Dev(开发)
           - Other(其他/指定)
         default: Stable(标准)
-      # kernelsu_branch_other:
-      #   description: "如果选择了 “其他”，请指定您的自定义分支"
-      #   required: false
-      #   type: string  # This input is required if 'Other' is chosen
       version:
-        description: 'Custom kernel version name (Ex: Characters after 5.10.198 or leave blank to use default kernel version uname)'
+        description: '自定义版本名(如5.10.198后面的字符/留空则使用默认版本号)'
         required: false
         type: string
       build_time:
-        description: 'Set Kernel Build Time'
+        description: '设置内核构建时间(格式见仓库说明)'
         required: false
         type: string
       use_zram:
-        description: 'Use ZRAM'
+        description: '是否开启增加更多ZRAM算法?'
         required: true
         type: boolean
         default: true
       use_bbg:
-        description: 'Use BBG (BaseBand Gruad)'
+        description: '是否开启BBG防格机补丁?'
         required: true
         type: boolean
         default: true
       use_kpm:
-        description: 'Use KPM'
+        description: '是否开启KPM功能?'
         required: true
         type: boolean
         default: true
       get_manager:
-        description: 'Build APP root + susfs'
+        description: '获取最新KSU管理器和SUS模块?'
         required: true
         type: boolean
         default: true
       onlyAk3:
-        description: 'Upload only AK3 zip file? (No bootloader, faster download speed)'
+        description: '仅上传AK3压缩包?(无boot,下载更快)'
         required: false
         type: boolean
         default: false
-
 
 jobs:
 
@@ -87,4 +81,3 @@ jobs:
     secrets: inherit
     with:
       kernelsu_variant: ${{ inputs.kernelsu_variant }}
-
