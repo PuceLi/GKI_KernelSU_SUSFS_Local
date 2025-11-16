@@ -1,4 +1,4 @@
-name: Build Kernel a12-5-10
+name: a12-5-10
 
 permissions:
   contents: write  # Allow writing to repository contents (for pushing tags)
@@ -32,40 +32,40 @@ on:
       #   required: false
       #   type: string  # This input is required if 'Other' is chosen
       version:
-        description: 'Nhập suffix tùy chỉnh, sẽ hiển thị sau phiên bản kernel'
+        description: 'Custom kernel version name (Ex: Characters after 5.10.198 or leave blank to use default kernel version uname)'
         required: false
         type: string
       build_time:
-        description: ' '
+        description: 'Set Kernel Build Time'
         required: false
         type: string
       use_zram:
-        description: ' Bật ZRAM? '
+        description: 'Use ZRAM'
         required: true
         type: boolean
         default: true
       use_bbg:
-        description: ' Dùng BBG?'
+        description: 'Use BBG (BaseBand Gruad)'
         required: true
         type: boolean
         default: true
       use_kpm:
-        description: ' Dùng KPM?'
+        description: 'Use KPM'
         required: true
         type: boolean
         default: true
       get_manager:
-        description: ' Lấy trình quản lý và module susfs mới nhất?'
+        description: 'Build APP root + susfs'
         required: true
         type: boolean
         default: true
       onlyAk3:
-        description: 'Chỉ upload anykernel3?'
+        description: 'Upload only AK3 zip file? (No bootloader, faster download speed)'
         required: false
         type: boolean
         default: false
-      
 
+      
 jobs:
   build-kernel-a12-5-10:
     uses: ./.github/workflows/kernel-a12-5.10.yml

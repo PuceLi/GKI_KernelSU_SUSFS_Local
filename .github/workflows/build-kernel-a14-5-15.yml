@@ -1,4 +1,4 @@
-name: 编译内核a14-5-15
+name: a14-5-15
 
 permissions:
   contents: write  # Allow writing to repository contents (for pushing tags)
@@ -27,41 +27,40 @@ on:
           - Other(其他/指定)
         default: Stable(标准)
       version:
-        description: '自定义版本名(如5.15.167后面的字符/留空则使用默认版本号)'
+        description: 'Custom kernel version name (Ex: Characters after 5.15.167 or leave blank to use default kernel version uname)'
         required: false
         type: string
       build_time:
-        description: '设置内核构建时间(格式见仓库说明)'
+        description: 'Set Kernel Build Time'
         required: false
         type: string
       use_zram:
-        description: '是否开启增加更多ZRAM算法?'
+        description: 'Use ZRAM'
         required: true
         type: boolean
         default: true
       use_bbg:
-        description: '是否开启BBG防格机补丁?'
+        description: 'Use BBG (BaseBand Gruad)'
         required: true
         type: boolean
         default: true
       use_kpm:
-        description: '是否开启KPM功能?'
+        description: 'Use KPM'
         required: true
         type: boolean
         default: true
       get_manager:
-        description: '获取最新KSU管理器和SUS模块?'
+        description: 'Build APP root + susfs'
         required: true
         type: boolean
         default: true
       onlyAk3:
-        description: '仅上传AK3压缩包?(无boot,下载更快)'
+        description: 'Upload only AK3 zip file? (No bootloader, faster download speed)'
         required: false
         type: boolean
         default: false
 
 jobs:
-
   build-kernel-a14-5-15:
     uses: ./.github/workflows/kernel-a14-5.15.yml
     secrets: inherit

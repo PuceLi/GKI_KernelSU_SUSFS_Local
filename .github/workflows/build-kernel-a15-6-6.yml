@@ -1,4 +1,4 @@
-name: 编译内核a15-6-6
+name: a15-6-6
 
 permissions:
   contents: write  # Allow writing to repository contents (for pushing tags)
@@ -27,46 +27,45 @@ on:
           - Other(其他/指定)
         default: Stable(标准)
       version:
-        description: '自定义版本名(如位于6.6.77-android15-8<自定义版本名>/留空则使用默认版本号)'
+        description: 'Custom kernel version name (Ex: Characters after 6.6.77-android15-8- or leave blank to use default kernel version uname)'
         required: false
         type: string
       build_time:
-        description: '设置内核构建时间(格式见仓库说明)'
+        description: 'Set Kernel Build Time'
         required: false
         type: string
       use_zram:
-        description: '是否开启增加更多ZRAM算法?'
+        description: 'Use ZRAM'
         required: true
         type: boolean
         default: true
       use_bbg:
-        description: '是否开启BBG防格机补丁?（报错请关闭）'
+        description: 'Use BBG (BaseBand Gruad)'
         required: true
         type: boolean
         default: true
       use_kpm:
-        description: '是否开启KPM功能?'
+        description: 'Use KPM'
         required: true
         type: boolean
         default: true
       supp_op:
-        description: '是否开启一加8E处理器机型支持?(非该机型无须勾)'
+        description: 'Enable support for OnePlus 8E processor models? (No need to check this box if your device is not this model)'
         required: false
         type: boolean
         default: false
       get_manager:
-        description: '获取最新KSU管理器和SUS模块?'
+        description: 'Build APP root + susfs'
         required: true
         type: boolean
         default: true
       onlyAk3:
-        description: '仅上传AK3压缩包?(无boot,下载更快)'
+        description: 'Upload only AK3 zip file? (No bootloader, faster download speed)'
         required: false
         type: boolean
         default: false
 
 jobs:
-
   build-kernel-a15-6-6:
     uses: ./.github/workflows/kernel-a15-6.6.yml
     secrets: inherit
