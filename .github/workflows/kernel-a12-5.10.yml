@@ -43,7 +43,7 @@ on:
         default: true
       onlyAk3:
         description: '仅上传AK3压缩包?(无boot,下载更快)'
-        required: false
+        required: true
         type: boolean
         default: false
       build_time:
