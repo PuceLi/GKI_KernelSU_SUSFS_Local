@@ -10,56 +10,55 @@ on:
       make_release:
         description: 'Do you want to create a release?'
         required: true
-        type: boolean
+        输入: boolean
         default: true
       kernelsu_variant:
         # description: "选择 KernelSU | 注意:选中MKSU时为标准版"
         description: "选择 KernelSU"
         required: true
-        type: choice
+        输入: choice
         options:
           - Official
           - Next
           - MKSU
           - SukiSU
-        default: SukiSU
+        默认: SukiSU
       kernelsu_branch:
         description: "选择 ksu 分支"
         required: true
-        type: choice
+        输入: choice
         options:
           - Stable(标准)
           - Dev(开发)
           - Other(其他/指定)
-        default: Stable(标准)
+        默认: Stable(标准)
       # kernelsu_branch_other:
       #   description: "如果选择了 “其他”，请指定您的自定义分支"
       #   required: false
       #   type: string  # This input is required if 'Other' is chosen
       version:
-        description: '自定义版本名(如5.10.198后面的字符/留空则使用默认版本号)'
-	   
+        description: '自定义版本名(如5.10.198后面的字符/留空则使用默认版本号)
         required: false
-        type: string
+        输入: string
       use_zram:
         description: '是否开启增加更多ZRAM算法?'
         required: true
-        type: boolean
+        输入: boolean
         default: true
       use_bbg:
         description: '是否开启BBG防格机补丁?'
         required: true
-        type: boolean
+        输入: boolean
         default: true
       use_kpm:
         description: '是否开启KPM功能?'
         required: true
-        type: boolean
+        输入: boolean
         default: true
       get_manager:
         description: '是否同时获取最新KSU管理器?'
         required: true
-        type: boolean
+        输入: boolean
         default: false
 jobs:
   get_manager:
