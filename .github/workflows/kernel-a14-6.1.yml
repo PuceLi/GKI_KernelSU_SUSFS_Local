@@ -6,10 +6,6 @@ permissions:
 on:
   workflow_call:  # This allows this workflow to be called from another workflow
     inputs:
-      make_release:
-        required: true
-        type: boolean
-        default: true
       kernelsu_variant:
         required: true
         type: string
@@ -37,6 +33,11 @@ on:
         required: true
         type: boolean
         default: true
+      cancel_susfs:
+        description: '取消susfs'
+        required: false
+        type: boolean
+        default: false
       onlyAk3:
         description: '仅上传AK3压缩包?(无boot,下载更快)'
         required: false
@@ -84,7 +85,6 @@ jobs:
     uses: ./.github/workflows/gki-kernel.yml
     secrets: inherit
     with:
-      make_release: ${{ inputs.make_release || false }}
       android_version: "android14"
       kernel_version: "6.1"
       sub_level: ${{ matrix.sub_level }}
@@ -98,3 +98,4 @@ jobs:
       supp_op: ${{ inputs.supp_op || false }}
       onlyAk3: ${{ inputs.onlyAk3 || false }}
       build_time: ${{ inputs.build_time || '' }}
+      cancel_susfs: ${{ inputs.cancel_susfs || false }}
