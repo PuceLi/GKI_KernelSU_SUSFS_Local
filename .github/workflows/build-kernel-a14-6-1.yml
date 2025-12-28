@@ -1,4 +1,4 @@
-name: 编译内核a14-6-1
+name: a14-6-1
 
 permissions:
   contents: write  # Allow writing to repository contents (for pushing tags)
@@ -86,4 +86,3 @@ jobs:
     secrets: inherit
     with:
       kernelsu_variant: ${{ inputs.kernelsu_variant }}
-

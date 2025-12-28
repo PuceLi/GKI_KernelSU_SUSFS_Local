@@ -195,9 +195,9 @@ jobs:
           echo "SUSFS 选用分支: $SUSFS_BRANCH"
 
           # Clone repositories using the branch names
-          git clone https://github.com/WildPlusKernel/AnyKernel3.git -b "$ANYKERNEL_BRANCH"
+          git clone https://github.com/hzzmonetvn/AnyKernel3.git -b "$ANYKERNEL_BRANCH"
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "$SUSFS_BRANCH"
-          git clone https://github.com/WildPlusKernel/kernel_patches.git
+          git clone https://github.com/hzzmonetvn/kernel_patches.git
           # Sukisu的补丁仓库
           git clone https://github.com/ShirkNeko/SukiSU_patch.git
           # next修复补丁
@@ -331,6 +331,8 @@ jobs:
             sed -i 's/\(v\$1-\).*\(@\$\)/\1${{ vars.MANAGER_STR }}\2/' ./kernel/Makefile 
             sed -n '50,70p' ./kernel/Makefile
           fi
+
+
 
       - name: 为 KernelSU 变体安装 SUSFS 补丁
         if: ${{ !inputs.cancel_susfs }}
