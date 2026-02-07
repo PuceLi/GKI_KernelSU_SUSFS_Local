@@ -76,6 +76,13 @@ Wiki 涵盖内容：
 - 🆘 紧急救援指南
 - 📊 内核版本兼容性说明
 - **🔧 [Fork 与自定义编译指南](https://github.com/zzh20188/GKI_KernelSU_SUSFS/wiki/Fork%E4%B8%8E%E8%87%AA%E5%AE%9A%E4%B9%89%E7%BC%96%E8%AF%91%E6%8C%87%E5%8D%97)** - 学习如何 Fork 仓库并编译自己的内核
+- **🧩 [自定义构建新手指南](https://github.com/zzh20188/GKI_KernelSU_SUSFS/wiki/%E8%87%AA%E5%AE%9A%E4%B9%89%E6%9E%84%E5%BB%BA%E6%96%B0%E6%89%8B%E6%8C%87%E5%8D%97)** - 面向新手的自定义构建模板
+如何使用见以下视频
+
+> - https://raw.githubusercontent.com/zzh20188/GKI_KernelSU_SUSFS/HEAD/assets/eg1.mp4
+> - https://raw.githubusercontent.com/zzh20188/GKI_KernelSU_SUSFS/HEAD/assets/eg2.mp4
+
+谷歌GKI发布地址：https://source.android.com/docs/core/architecture/kernel/gki-release-builds?hl=zh-cn
 
 ---
 
