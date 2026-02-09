@@ -245,6 +245,21 @@ jobs:
             git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "$SUSFS_BRANCH"
           fi
 
+          # 检查是否启用自定义提交
+          CONFIG_FILE="config/config"
+          if [ -f "$CONFIG_FILE" ]; then
+            CUSTOM_ENABLED=$(grep "^custom=" "$CONFIG_FILE" | cut -d'=' -f2)
+            if [ "$CUSTOM_ENABLED" == "true" ]; then
+              CUSTOM_COMMIT=$(grep "^${SUSFS_BRANCH}=" "$CONFIG_FILE" | cut -d'=' -f2)
+              if [ -n "$CUSTOM_COMMIT" ]; then
+                echo "切换 SUSFS 到自定义提交: $CUSTOM_COMMIT"
+                cd susfs4ksu
+                git checkout "$CUSTOM_COMMIT"
+                cd ..
+              fi
+            fi
+          fi
+
           echo "克隆补丁仓库..."
           git clone https://github.com/WildKernels/kernel_patches.git
           git clone https://github.com/ShirkNeko/SukiSU_patch.git
@@ -341,6 +356,7 @@ jobs:
               case "$variant_input" in
                 "Next") BRANCH="-s stable" ;;
                 "SukiSU"|"ReSukiSU") BRANCH="-s builtin" ;;
+                "Official"|"MKSU") BRANCH="-s main" ;;
                 *) BRANCH="-" ;;
               esac
               ;;
@@ -365,6 +381,19 @@ jobs:
             fi
           fi
 
+          # 检查是否启用自定义提交 (仅对 SukiSU 生效)
+          CONFIG_FILE="config/config"
+          if [ -f "$CONFIG_FILE" ]; then
+            CUSTOM_ENABLED=$(grep "^custom=" "$CONFIG_FILE" | cut -d'=' -f2)
+            if [ "$CUSTOM_ENABLED" == "true" ] && [ "$variant_input" == "SukiSU" ]; then
+              SUKISU_COMMIT=$(grep "^sukisu=" "$CONFIG_FILE" | cut -d'=' -f2)
+              if [ -n "$SUKISU_COMMIT" ]; then
+                BRANCH="-s $SUKISU_COMMIT"
+                echo "SukiSU 使用自定义提交: $SUKISU_COMMIT"
+              fi
+            fi
+          fi
+
           echo "BRANCH=$BRANCH" >> $GITHUB_ENV
           echo "KSU 分支: $BRANCH"
 
@@ -377,6 +406,20 @@ jobs:
             "Official")
               echo "添加 KernelSU 官方版..."
               curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash $BRANCH
+
+              # 计算并设置 KSU 版本号
+              cd KernelSU
+              KSU_GIT_VERSION=$(git rev-list --count HEAD)
+              KSU_VERSION=$((20000 + KSU_GIT_VERSION))
+              echo "KSU_VERSION=$KSU_VERSION" >> $GITHUB_ENV
+              echo "计算的 KSU 版本号: $KSU_VERSION"
+
+              # 更新 Kbuild 中的版本号
+              if [ -f "kernel/Kbuild" ]; then
+                sed -i "s/DKSU_VERSION=16/DKSU_VERSION=${KSU_VERSION}/" kernel/Kbuild
+                echo "已更新 kernel/Kbuild 中的版本号"
+              fi
+              cd ..
               ;;
             "Next")
               echo "添加 KernelSU-Next..."
@@ -385,6 +428,20 @@ jobs:
             "MKSU")
               echo "添加 MKSU..."
               curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" | bash $BRANCH
+
+              # 计算并设置 KSU 版本号
+              cd KernelSU
+              KSU_GIT_VERSION=$(git rev-list --count HEAD)
+              KSU_VERSION=$((20000 + KSU_GIT_VERSION))
+              echo "KSU_VERSION=$KSU_VERSION" >> $GITHUB_ENV
+              echo "计算的 KSU 版本号: $KSU_VERSION"
+
+              # 更新 Kbuild 中的版本号
+              if [ -f "kernel/Kbuild" ]; then
+                sed -i "s/DKSU_VERSION=16/DKSU_VERSION=${KSU_VERSION}/" kernel/Kbuild
+                echo "已更新 kernel/Kbuild 中的版本号"
+              fi
+              cd ..
               ;;
             "SukiSU")
               echo "添加 SukiSU..."
@@ -421,7 +478,20 @@ jobs:
             "Official"|"MKSU")
               cd ./KernelSU
               cp $SUSFS4KSU/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./
-              patch -p1 --forward < 10_enable_susfs_for_ksu.patch || true
+
+              # 修复补丁格式（Makefile → Kbuild）
+              sed -i 's|kernel/Makefile|kernel/Kbuild|g' ./10_enable_susfs_for_ksu.patch
+
+              # 修复补丁上下文行数
+              sed -i 's|^@@ .* format:.*|@@ -94,4 +94,13 @@|' ./10_enable_susfs_for_ksu.patch
+
+              # 修复编译警告配置
+              sed -i 's|.*check-format:.*| ccflags-y += -Wno-strict-prototypes -Wno-int-conversion -Wno-gcc-compat -Wno-missing-prototypes|' ./10_enable_susfs_for_ksu.patch
+              sed -i 's|.*clang-format --dry-run.*| ccflags-y += -Wno-declaration-after-statement -Wno-unused-function -Wno-unused-variable|' ./10_enable_susfs_for_ksu.patch
+
+              # 应用补丁
+              patch -p1 < 10_enable_susfs_for_ksu.patch || true
+              cd ..
               ;;
             "Next"|"SukiSU"|"ReSukiSU")
               echo "Next/SukiSU/ReSukiSU 使用内置 SUSFS 支持"
@@ -733,11 +803,9 @@ jobs:
               strings ./bazel-bin/common/kernel_aarch64/Image | grep 'Linux version'
             fi
 
-            echo "::group::构建说明"
             echo "一般情况下不会出错，除非KSU仓库和SUSFS仓库代码不同。"
             echo "不要问，不要急，这跟你怎么努力，或者跟我反馈没关系，因为这跟我无关。"
             echo "等待适配即可，你有能力则自己去SUKISU仓库提交代码，"
-            echo "::endgroup::"
 
       # ==================== KPM 补丁 (仅 SukiSU) ====================
       # 为 SukiSU 应用 KPM (Kernel Patch Module) 补丁
