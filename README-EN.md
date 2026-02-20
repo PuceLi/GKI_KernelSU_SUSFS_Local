@@ -6,9 +6,9 @@
 
 Automated GKI kernel builds with KernelSU + SUSFS.
 
-[![GitHub Release](https://img.shields.io/github/v/release/zzh20188/GKI_KernelSU_SUSFS?style=for-the-badge&logo=android&color=green)](https://github.com/zzh20188/GKI_KernelSU_SUSFS/releases)
-[![KernelSU](https://img.shields.io/badge/KernelSU-Supported-green)](https://kernelsu.org/)
-[![SUSFS](https://img.shields.io/badge/SUSFS-Integrated-orange)](https://gitlab.com/simonpunk/susfs4ksu)
+[![Release](https://img.shields.io/github/v/release/zzh20188/GKI_KernelSU_SUSFS?label=Release&style=flat-square&logo=github&logoColor=white&color=2ea44f)](https://github.com/zzh20188/GKI_KernelSU_SUSFS/releases)
+[![KernelSU](https://img.shields.io/badge/KernelSU-Supported-5AA300?style=flat-square)](https://kernelsu.org/)
+[![SUSFS](https://img.shields.io/badge/SUSFS-Integrated-E67E22?style=flat-square)](https://gitlab.com/simonpunk/susfs4ksu)
 
 English | [**简体中文**](README.md)
 
@@ -66,7 +66,7 @@ Build now auto-detects `config/stock_defconfig`: if present, it is applied; if a
 
 During build, workflow will automatically:
 - copy it to `$KERNEL_ROOT/common/arch/arm64/configs/stock_defconfig`
-- switch Makefile `config_data` rule from `$(KCONFIG_CONFIG)` to `stock_defconfig`
+- in `$KERNEL_ROOT/common/kernel/Makefile`, switch `$(obj)/config_data` rule from `$(KCONFIG_CONFIG)` to `arch/arm64/configs/stock_defconfig`
 - make `/proc/config.gz` in the built kernel closer to your stock kernel config
 
 ## Recommended Modules

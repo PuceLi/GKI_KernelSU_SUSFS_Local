@@ -5,10 +5,10 @@
 
 **自动化构建 GKI 内核 | 集成 KernelSU + SUSFS**
 
-[![GitHub Release](https://img.shields.io/github/v/release/zzh20188/GKI_KernelSU_SUSFS?style=for-the-badge&logo=android&color=green)](https://github.com/zzh20188/GKI_KernelSU_SUSFS/releases)
+[![Release](https://img.shields.io/github/v/release/zzh20188/GKI_KernelSU_SUSFS?label=Release&style=flat-square&logo=github&logoColor=white&color=2ea44f)](https://github.com/zzh20188/GKI_KernelSU_SUSFS/releases)
 [![Coolapk](https://img.shields.io/badge/Follow-Coolapk-3DDC84?style=flat-square&logo=android&logoColor=white)](http://www.coolapk.com/u/11253396)
-[![KernelSU](https://img.shields.io/badge/KernelSU-Supported-green)](https://kernelsu.org/)
-[![SUSFS](https://img.shields.io/badge/SUSFS-Integrated-orange)](https://gitlab.com/simonpunk/susfs4ksu)
+[![KernelSU](https://img.shields.io/badge/KernelSU-Supported-5AA300?style=flat-square)](https://kernelsu.org/)
+[![SUSFS](https://img.shields.io/badge/SUSFS-Integrated-E67E22?style=flat-square)](https://gitlab.com/simonpunk/susfs4ksu)
 
 [**English**](README-EN.md) | 简体中文
 
@@ -20,25 +20,18 @@
 
 <table>
 <tr>
-<td align="center" width="33%">
+<td align="center" width="50%">
 
 **📖 文档**
 
 [GitHub Wiki](https://github.com/zzh20188/GKI_KernelSU_SUSFS/wiki)
 
 </td>
-<td align="center" width="33%">
+<td align="center" width="50%">
 
 **📥 下载**
 
 [Releases](https://github.com/zzh20188/GKI_KernelSU_SUSFS/releases)
-
-</td>
-<td align="center" width="33%">
-
-**📋 更新日志**
-
-[CHANGELOG](doc/CHANGELOG.md)
 
 </td>
 </tr>
@@ -143,11 +136,11 @@ sukisu=
 使用方法：
 1. 确保设备当前是官方 ROM + 官方内核。
 2. 获取设备上的 `/proc/config.gz`（可在手机端或电脑端操作）。
-3. 解压后重命名为 `stock_defconfig`，上传到仓库 `config/` 目录并提交（可直接在手机端完成）。
+3. 解压后重命名为 `stock_defconfig`，上传到仓库 [`config/`](config/) 目录并提交（可直接在手机端完成）。
 
 构建流程会自动：
 - 复制到内核源码：`$KERNEL_ROOT/common/arch/arm64/configs/stock_defconfig`
-- 将 Makefile 规则从 `$(KCONFIG_CONFIG)` 切换为 `stock_defconfig`
+- 在 `$KERNEL_ROOT/common/kernel/Makefile` 中将 `$(obj)/config_data` 规则从 `$(KCONFIG_CONFIG)` 切换为 `arch/arm64/configs/stock_defconfig`
 - 使编译产物中的 `/proc/config.gz` 更贴近你的官方内核配置
 ---
 
