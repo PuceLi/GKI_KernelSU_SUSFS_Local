@@ -154,6 +154,13 @@ jobs:
           packages: ccache python3 git curl build-essential libssl-dev bison flex libelf-dev dwarves
           execute_install_scripts: true
 
+      - name: 安装构建依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential curl flex git gnupg gperf \
+            libelf-dev libncurses5-dev libssl-dev python3 python-is-python3 \
+            unzip xz-utils zip zlib1g-dev dwarves # <--- 确保有这个 
+
       - name: 配置 ccache
         run: |
           mkdir -p ~/.cache/bazel
@@ -807,12 +814,8 @@ jobs:
       - name: 配置内核选项
         working-directory: ${{ env.KERNEL_ROOT }}
         run: |
-          cat >> "$DEFCONFIG" << 'EOF'
-          CONFIG_KSU=y
-          CONFIG_TMPFS_XATTR=y
-          CONFIG_TMPFS_POSIX_ACL=y
-          EOF
-
+          cat $GITHUB_WORKSPACE/config/gki_defconfig >> "$DEFCONFIG"     
+          
           if [ "${{ inputs.ksu_variant }}" == "SukiSU" ] || [ "${{ inputs.ksu_variant }}" == "ReSukiSU" ] || [ "${{ inputs.ksu_variant }}" == "Next" ]; then
             echo "CONFIG_KPM=y" >> "$DEFCONFIG"
           fi
@@ -912,6 +915,9 @@ jobs:
             echo "当前 SUSFS 最新提交日期: ${SUSFS_LATEST_COMMIT_DATE}"
             set -ex
             cd "$KERNEL_ROOT"
+            
+            # --- 绕过配置检查，直接篡改 C 语言底层源码设定默认 FQ ---
+            sed -i 's/CONFIG_DEFAULT_NET_SCH/"fq"/g' common/net/sched/sch_generic.c
 
             sed -i 's/BUILD_SYSTEM_DLKM=1/BUILD_SYSTEM_DLKM=0/' ./common/build.config.gki.aarch64
             sed -i '/MODULES_ORDER=android\/gki_aarch64_modules/d' ./common/build.config.gki.aarch64
