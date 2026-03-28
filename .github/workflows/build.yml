@@ -299,15 +299,12 @@ jobs:
             "$DEFAULT_CLANG_DIR/bin/clang" --version
           fi
 
-          echo "正在全局解除 -Werror 限制 (改良版)..."
-          # 1. 先匹配并删除带有参数的，如 -Werror=strict-prototypes
-          find . -type f \( -name "Makefile" -o -name "Kbuild" \) -exec sed -i 's/-Werror=[a-zA-Z0-9_-]*//g' {} +
-          # 2. 再删除独立存在的 -Werror
-          find . -type f \( -name "Makefile" -o -name "Kbuild" \) -exec sed -i 's/-Werror//g' {} +
+          echo "正在全局解除 -Werror 限制 (最终完美版正则)..."
+          # 使用高级正则：匹配以空格或行首开头的 -Werror，以及可能紧接着的 =xxx 或 -xxx，并将其整块安全剥离
+          find . -type f \( -name "Makefile" -o -name "Kbuild" \) -exec sed -i -E 's/(^|[[:space:]])-Werror([=-][a-zA-Z0-9_-]+)?/\1/g' {} +
           
-          # 3. 针对 Android 6.1 GKI 中某些被硬编码在 scripts 中的 flag 进行额外清理
-          find common/scripts -type f -name "Makefile.build" -exec sed -i 's/-Werror=[a-zA-Z0-9_-]*//g' {} + 2>/dev/null || true
-          find common/scripts -type f -name "Makefile.build" -exec sed -i 's/-Werror//g' {} + 2>/dev/null || true  
+          # 同样处理 scripts 目录下的构建规则
+          find common/scripts -type f -name "Makefile.build" -exec sed -i -E 's/(^|[[:space:]])-Werror([=-][a-zA-Z0-9_-]+)?/\1/g' {} + 2>/dev/null || true 
 
       - name: 应用 Stock Config 伪装
         run: |
