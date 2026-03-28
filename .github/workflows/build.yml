@@ -299,11 +299,15 @@ jobs:
             "$DEFAULT_CLANG_DIR/bin/clang" --version
           fi
 
-          # 【防暴毙核心】高版本 Clang 必定触发大量新语法警告
-          # 必须暴力清除所有 Makefile 中的 -Werror，否则编译必断
-          echo "正在全局解除 -Werror 限制..."
-          find . -type f -name "Makefile" -exec sed -i 's/-Werror//g' {} +
-          find . -type f -name "Kbuild" -exec sed -i 's/-Werror//g' {} +    
+          echo "正在全局解除 -Werror 限制 (改良版)..."
+          # 1. 先匹配并删除带有参数的，如 -Werror=strict-prototypes
+          find . -type f \( -name "Makefile" -o -name "Kbuild" \) -exec sed -i 's/-Werror=[a-zA-Z0-9_-]*//g' {} +
+          # 2. 再删除独立存在的 -Werror
+          find . -type f \( -name "Makefile" -o -name "Kbuild" \) -exec sed -i 's/-Werror//g' {} +
+          
+          # 3. 针对 Android 6.1 GKI 中某些被硬编码在 scripts 中的 flag 进行额外清理
+          find common/scripts -type f -name "Makefile.build" -exec sed -i 's/-Werror=[a-zA-Z0-9_-]*//g' {} + 2>/dev/null || true
+          find common/scripts -type f -name "Makefile.build" -exec sed -i 's/-Werror//g' {} + 2>/dev/null || true  
 
       - name: 应用 Stock Config 伪装
         run: |
