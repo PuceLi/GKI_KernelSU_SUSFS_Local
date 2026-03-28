@@ -960,8 +960,9 @@ jobs:
             sed -i '/MODULES_ORDER=android\/gki_aarch64_modules/d' ./common/build.config.gki.aarch64
             sed -i '/KMI_SYMBOL_LIST_STRICT_MODE/d' ./common/build.config.gki.aarch64
             
-            # 强行修复 vdso32 Makefile 中的语法错误
-            sed -i 's/-implicit-function-declaration/-Wno-implicit-function-declaration/g' common/arch/arm64/kernel/vdso32/Makefile
+            # --- 修复 Clang 19 严格校验导致的残缺参数报错 ---
+            echo "正在修复 vdso32 等 Makefile 中的参数错别字..."
+            find common/ -type f -name "Makefile" -exec sed -i 's/-implicit-function-declaration/-Wno-implicit-function-declaration/g' {} +
 
             if [ -f "build/build.sh" ]; then
               LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh CC="/usr/bin/ccache clang" || exit 1
