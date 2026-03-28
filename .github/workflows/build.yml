@@ -959,6 +959,9 @@ jobs:
             sed -i 's/BUILD_SYSTEM_DLKM=1/BUILD_SYSTEM_DLKM=0/' ./common/build.config.gki.aarch64
             sed -i '/MODULES_ORDER=android\/gki_aarch64_modules/d' ./common/build.config.gki.aarch64
             sed -i '/KMI_SYMBOL_LIST_STRICT_MODE/d' ./common/build.config.gki.aarch64
+            
+            # 强行修复 vdso32 Makefile 中的语法错误
+            sed -i 's/-implicit-function-declaration/-Wno-implicit-function-declaration/g' common/arch/arm64/kernel/vdso32/Makefile
 
             if [ -f "build/build.sh" ]; then
               LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh CC="/usr/bin/ccache clang" || exit 1
