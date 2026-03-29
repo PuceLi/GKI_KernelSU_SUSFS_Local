@@ -401,7 +401,7 @@ jobs:
           variant_input="${{ inputs.ksu_variant }}"
 
           if [ "$variant_input" = "ReSukiSU" ]; then
-            BRANCH="-s dev"
+            BRANCH="-s main"
           else
             case "$branch_input" in
               "Stable(标准)")
