@@ -269,11 +269,11 @@ jobs:
           $REPO --trace sync -c -j$(nproc --all) --no-tags --fail-fast
           echo "REMOTE_BRANCH=$REMOTE_BRANCH" >> $GITHUB_ENV
           
-      - name: 激进升级最新 Clang 19 编译器
+      - name: 升级 Clang 19 编译器
         working-directory: ${{ env.KERNEL_ROOT }}
         run: |
           # 目标版本：AOSP main 分支的 Clang 19 预编译快照
-          TARGET_CLANG_VER="clang-r536225"
+          TARGET_CLANG_VER="clang-r547379"
           
           # 获取系统默认拉取的旧版 Clang 目录
           DEFAULT_CLANG_DIR=$(ls -d prebuilts/clang/host/linux-x86/clang-r* | head -n 1)
@@ -291,19 +291,25 @@ jobs:
             
             cd ${{ env.KERNEL_ROOT }}
             
-            # 狸猫换太子，骗过 Bazel
             mv "$DEFAULT_CLANG_DIR" "${DEFAULT_CLANG_DIR}_bak"
             mv /tmp/new_clang "$DEFAULT_CLANG_DIR"
             
             echo "Clang 升级完毕！当前编译器信息："
             "$DEFAULT_CLANG_DIR/bin/clang" --version
           fi
+          
+            # --- 新增：验证 LLVM 其他核心组件的版本 ---
+            echo "验证 LLVM 链接器 (LLD) 版本："
+            "$DEFAULT_CLANG_DIR/bin/ld.lld" --version
+            
+            echo "验证 LLVM 归档工具 (llvm-ar) 版本："
+            "$DEFAULT_CLANG_DIR/bin/llvm-ar" --version
+            
+            echo "验证 LLVM 目标文件工具 (llvm-objdump) 版本："
+            "$DEFAULT_CLANG_DIR/bin/llvm-objdump" --version
 
           echo "正在全局解除 -Werror 限制 (最终完美版正则)..."
-          # 使用高级正则：匹配以空格或行首开头的 -Werror，以及可能紧接着的 =xxx 或 -xxx，并将其整块安全剥离
           find . -type f \( -name "Makefile" -o -name "Kbuild" \) -exec sed -i -E 's/(^|[[:space:]])-Werror([=-][a-zA-Z0-9_-]+)?/\1/g' {} +
-          
-          # 同样处理 scripts 目录下的构建规则
           find common/scripts -type f -name "Makefile.build" -exec sed -i -E 's/(^|[[:space:]])-Werror([=-][a-zA-Z0-9_-]+)?/\1/g' {} + 2>/dev/null || true 
 
       - name: 应用 Stock Config 伪装
