@@ -273,7 +273,7 @@ jobs:
         working-directory: ${{ env.KERNEL_ROOT }}
         run: |
           # 目标版本：AOSP main 分支的 Clang 19 预编译快照
-          TARGET_CLANG_VER="clang-r563880c"
+          TARGET_CLANG_VER="clang-r563880"
           
           # 获取系统默认拉取的旧版 Clang 目录
           DEFAULT_CLANG_DIR=$(ls -d prebuilts/clang/host/linux-x86/clang-r* | head -n 1)
