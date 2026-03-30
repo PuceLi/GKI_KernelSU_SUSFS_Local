@@ -1,0 +1,28 @@
+name: 删除旧构建记录
+
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: '保留最近几天的记录？(输入 0 删除全部)'
+        required: true
+        default: '0'
+      minimum_runs:
+        description: '每个工作流至少保留几个最新的记录？'
+        required: true
+        default: '0'
+
+jobs:
+  del_runs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete workflow runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          retain_days: ${{ github.event.inputs.days }}
+          keep_minimum_runs: ${{ github.event.inputs.minimum_runs }}
+          # 可选：如果只想删除特定的工作流（比如你截图里的内核构建），
+          # 可以取消注释下面这行，并填入你那个工作流的文件名
+          # delete_workflow_pattern: "kernel-a14-6-1.yml"
