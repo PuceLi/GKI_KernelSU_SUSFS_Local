@@ -312,6 +312,43 @@ jobs:
           find . -type f \( -name "Makefile" -o -name "Kbuild" \) -exec sed -i -E 's/(^|[[:space:]])-Werror([=-][a-zA-Z0-9_-]+)?/\1/g' {} +
           find common/scripts -type f -name "Makefile.build" -exec sed -i -E 's/(^|[[:space:]])-Werror([=-][a-zA-Z0-9_-]+)?/\1/g' {} + 2>/dev/null || true 
 
+      - name: 修复小米 DRM 闪屏问题 (自动跳过 138 及以下版本)
+        if: inputs.kernel_version == '6.1'
+        working-directory: ${{ env.KERNEL_ROOT }}/common
+        run: |
+          SUBLEVEL="${{ inputs.sub_level }}"
+          
+          # 【核心逻辑】：判断子版本号，如果是 138 或更低，直接安全退出，不做任何修改
+          if [ "$SUBLEVEL" -le 138 ]; then
+            echo "当前编译子版本为 6.1.$SUBLEVEL，属于原厂兼容范围，无需执行 DRM 修复。"
+            exit 0
+          fi
+          
+          echo "当前编译子版本为 6.1.$SUBLEVEL (>138)，存在闪屏风险，开始执行 DRM 降级修复..."
+          
+          # 配置 Git 身份
+          git config --global user.email "bot@github.com"
+          git config --global user.name "Github Actions Fixer"
+          
+          echo "查找并撤销破坏 DRM ABI 的提交..."
+          # 尝试获取 138 到 141 之间触碰过 drm 头文件和核心的 commit hash
+          BAD_COMMITS=$(git rev-list v6.1.138..v6.1.141 -- include/drm include/uapi/drm drivers/gpu/drm/drm_file.c 2>/dev/null || echo "")
+          
+          if [ -n "$BAD_COMMITS" ]; then
+            for commit in $BAD_COMMITS; do
+              echo "Reverting commit: $commit"
+              git revert --no-commit $commit || echo "Revert 遇到冲突，跳过 $commit"
+            done
+            echo "DRM 核心 API 已成功降级回 6.1.138 状态！"
+          else
+            echo "未找到完整的 v6.1.x tags，启动备用搜索方案..."
+            # 备用方案：在最近的代码中直接搜索修改过 drm_event 大小的嫌疑 commit 并干掉它
+            SUSPECT_COMMIT=$(git log --oneline -n 20 --grep="drm" include/uapi/drm/ drivers/gpu/drm/ | awk '{print $1}')
+            for sc in $SUSPECT_COMMIT; do
+               git revert --no-commit $sc || true
+            done
+          fi
+          
       - name: 应用 Stock Config 伪装
         run: |
           STOCK_SRC="$GITHUB_WORKSPACE/config/stock_defconfig"
