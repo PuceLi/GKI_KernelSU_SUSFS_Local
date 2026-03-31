@@ -896,9 +896,9 @@ jobs:
         run: |
           cat $GITHUB_WORKSPACE/config/gki_defconfig >> "$DEFCONFIG"     
           
-          if [ "${{ inputs.ksu_variant }}" == "SukiSU" ] || [ "${{ inputs.ksu_variant }}" == "ReSukiSU" ] || [ "${{ inputs.ksu_variant }}" == "Next" ]; then
+          #if [ "${{ inputs.ksu_variant }}" == "SukiSU" ] || [ "${{ inputs.ksu_variant }}" == "ReSukiSU" ] || [ "${{ inputs.ksu_variant }}" == "Next" ]; then
             #echo "CONFIG_KPM=y" >> "$DEFCONFIG"
-          fi
+          #fi
 
           sed -i 's/check_defconfig//' ./common/build.config.gki
           
