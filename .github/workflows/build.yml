@@ -901,6 +901,20 @@ jobs:
           fi
 
           sed -i 's/check_defconfig//' ./common/build.config.gki
+          
+      - name: 彻底修复 eBPF LSM (开启功能 + 强制排序)
+        working-directory: ${{ env.KERNEL_ROOT }}/common
+        run: |
+          # 1. 强行开启 BPF_LSM 核心编译开关（把未设置改成 y）
+          sed -i 's/# CONFIG_BPF_LSM is not set/CONFIG_BPF_LSM=y/' arch/arm64/configs/gki_defconfig
+          # 为了保险起见，再在末尾追加一次
+          echo "CONFIG_BPF_LSM=y" >> arch/arm64/configs/gki_defconfig
+          
+          # 2. 强制指定 LSM 顺序，必须让 bpf 排在 selinux 前面
+          sed -i 's/^CONFIG_LSM=.*/CONFIG_LSM="landlock,lockdown,yama,loadpin,safesetid,integrity,bpf,selinux,smack,tomoyo,apparmor"/' arch/arm64/configs/gki_defconfig
+          
+          # 3. 阉割内核读取外部 lsm= 参数的通道，防止 Bootloader 捣乱
+          sed -i 's/early_param("lsm", choose_lsm_order);/\/\/early_param("lsm", choose_lsm_order);/g' security/security.c    
 
       - name: 添加 SUSFS 配置
         if: inputs.enable_susfs
