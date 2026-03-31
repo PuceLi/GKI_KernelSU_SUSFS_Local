@@ -897,7 +897,7 @@ jobs:
           cat $GITHUB_WORKSPACE/config/gki_defconfig >> "$DEFCONFIG"     
           
           if [ "${{ inputs.ksu_variant }}" == "SukiSU" ] || [ "${{ inputs.ksu_variant }}" == "ReSukiSU" ] || [ "${{ inputs.ksu_variant }}" == "Next" ]; then
-            echo "CONFIG_KPM=y" >> "$DEFCONFIG"
+            #echo "CONFIG_KPM=y" >> "$DEFCONFIG"
           fi
 
           sed -i 's/check_defconfig//' ./common/build.config.gki
@@ -1048,7 +1048,7 @@ jobs:
             echo "如果日期不同或相差过远则补丁失效、编译失败"
 
       - name: 应用 KPM 补丁 (SukiSU/ReSukiSU/Next)
-        if: inputs.use_kpm && (inputs.ksu_variant == 'SukiSU' || inputs.ksu_variant == 'ReSukiSU' || inputs.ksu_variant == 'Next')
+        if: false && inputs.use_kpm && (inputs.ksu_variant == 'SukiSU' || inputs.ksu_variant == 'ReSukiSU' || inputs.ksu_variant == 'Next')
         run: |
           case "${{ inputs.android_version }}" in
             "android12"|"android13")
