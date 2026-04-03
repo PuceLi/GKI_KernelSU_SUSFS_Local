@@ -1,7 +1,22 @@
 {
-  "android12-5.10": "android12-5.10-2025-12_r2",
-  "android13-5.15": "android13-5.15-2026-03_r2",
-  "android14-5.15": "android14-5.15-2026-01_r1",
-  "android14-6.1": "android14-6.1-2026-03_r2",
-  "android15-6.6": "android15-6.6-2026-01_r22"
+  "android12-5.10": {
+    "tag": "android12-5.10-2025-12_r2",
+    "sublevel": "246"
+  },
+  "android13-5.15": {
+    "tag": "android13-5.15-2026-03_r2",
+    "sublevel": "197"
+  },
+  "android14-5.15": {
+    "tag": "android14-5.15-2026-01_r1",
+    "sublevel": "196"
+  },
+  "android14-6.1": {
+    "tag": "android14-6.1-2026-03_r2",
+    "sublevel": "162"
+  },
+  "android15-6.6": {
+    "tag": "android15-6.6-2026-01_r22",
+    "sublevel": "118"
+  }
 }
