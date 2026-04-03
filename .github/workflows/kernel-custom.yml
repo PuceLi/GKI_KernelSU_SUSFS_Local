@@ -1,8 +1,7 @@
 name: Android 内核构建-自定义
 
 permissions:
-  contents: write
-  actions: write
+  contents: read # 读取配置文件的权限
 
 on:
   workflow_dispatch:
@@ -18,9 +17,9 @@ on:
           - android14
           - android15
           - android16
-        default: android12
+        default: android14
       kernel_version:
-        description: "内核版本"
+        description: "内核大版本"
         required: true
         type: choice
         options:
@@ -29,22 +28,22 @@ on:
           - "6.1"
           - "6.6"
           - "6.12"
-        default: "5.10"
-      sub_level:
-        description: "子版本号 (如 66, 198, X)"
-        required: true
-        type: string
-        default: "66"
+        default: "6.1"
       os_patch_level:
-        description: "安全补丁级别 (如 2022-01, lts)"
+        description: "安全补丁级别 (填 latest 自动读取最新，或手填如 2026-03)"
         required: true
         type: string
-        default: "2022-01"
+        default: "latest"
+      sub_level:
+        description: "子版本号 (上方选 latest 时会自动覆盖，手填如 162)"
+        required: true
+        type: string
+        default: "auto"
       revision:
-        description: "修订版本 (如 r11, 仅 5.10 需要)"
+        description: "修订版本 (上方选 latest 时会自动覆盖，手填如 r2)"
         required: false
         type: string
-        default: "r11"
+        default: ""
 
       # ==================== KernelSU 配置 ====================
       kernelsu_variant:
@@ -53,7 +52,6 @@ on:
         type: choice
         options:
           - Official
-          #- Next
           - MKSU
           - SukiSU
           - ReSukiSU
@@ -107,16 +105,79 @@ on:
         default: false
 
 jobs:
+  # ==================== 新增：解析配置中心 ====================
+  resolve-config:
+    runs-on: ubuntu-latest
+    outputs:
+      patch: ${{ steps.parse.outputs.patch }}
+      rev: ${{ steps.parse.outputs.rev }}
+      sub: ${{ steps.parse.outputs.sub }}
+    steps:
+      - name: 检出代码读取配置
+        uses: actions/checkout@v4
+      
+      - name: 智能解析 KMI 版本参数
+        id: parse
+        run: |
+          A_VER="${{ inputs.android_version }}"
+          K_VER="${{ inputs.kernel_version }}"
+          PATCH="${{ inputs.os_patch_level }}"
+          SUB="${{ inputs.sub_level }}"
+          REV="${{ inputs.revision }}"
+
+          # 如果用户输入了 latest，则去读取 config/kmi_latest.env
+          if [ "$PATCH" = "latest" ]; then
+            echo "🔍 检测到 latest 意图，正在从配置文件读取最新信息..."
+            source config/kmi_latest.env
+            
+            # 构造要查找的环境变量名，如 ANDROID14_6_1_LATEST
+            PREFIX=$(echo "${A_VER}_${K_VER}" | tr 'a-z' 'A-Z' | tr '-' '_' | tr '.' '_')
+            TAG_VAR="${PREFIX}_LATEST"
+            SUB_VAR="${PREFIX}_SUBLEVEL"
+            
+            LATEST_TAG=${!TAG_VAR}
+            SUB=${!SUB_VAR}
+            
+            if [ -n "$LATEST_TAG" ]; then
+              # 拆解 Tag 字符串 (例如将 android14-6.1-2026-03_r2 拆开)
+              SUFFIX=${LATEST_TAG#${A_VER}-${K_VER}-}  # 得到 2026-03_r2
+              PATCH=$(echo $SUFFIX | cut -d'_' -f1)    # 得到 2026-03
+              REV=$(echo $SUFFIX | grep -o 'r.*' || echo "") # 得到 r2 (如果没有则为空)
+              
+              echo "✅ 成功解析最新版本！"
+            else
+              echo "⚠️ 配置文件中没有找到 ${A_VER}-${K_VER} 的最新版本，请检查抓取工作流是否成功运行！"
+              exit 1
+            fi
+          else
+            echo "📌 用户指定了历史版本参数: $PATCH $REV (小版本: $SUB)"
+          fi
+
+          echo "最终传递给构建系统的参数："
+          echo "Patch Level: $PATCH"
+          echo "Revision: $REV"
+          echo "Sublevel: $SUB"
+
+          # 输出变量给下一个 Job
+          echo "patch=$PATCH" >> $GITHUB_OUTPUT
+          echo "rev=$REV" >> $GITHUB_OUTPUT
+          echo "sub=$SUB" >> $GITHUB_OUTPUT
+
+  # ==================== 原有的构建任务 ====================
   build-custom-kernel:
-    name: "${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.android_version }}-${{ inputs.os_patch_level }}"
+    needs: resolve-config # 等待解析完成
+    # 动态显示最终确定的版本号在 Actions 标题上
+    name: "构建: ${{ inputs.kernel_version }}.${{ needs.resolve-config.outputs.sub }}-${{ inputs.android_version }}-${{ needs.resolve-config.outputs.patch }}"
     uses: ./.github/workflows/build.yml
     secrets: inherit
     with:
       android_version: ${{ inputs.android_version }}
       kernel_version: ${{ inputs.kernel_version }}
-      sub_level: ${{ inputs.sub_level }}
-      os_patch_level: ${{ inputs.os_patch_level }}
-      revision: ${{ inputs.revision || '' }}
+      # 使用解析后的最新/指定参数替换掉原始输入
+      sub_level: ${{ needs.resolve-config.outputs.sub }}
+      os_patch_level: ${{ needs.resolve-config.outputs.patch }}
+      revision: ${{ needs.resolve-config.outputs.rev }}
+      
       ksu_variant: ${{ inputs.kernelsu_variant }}
       ksu_branch: ${{ inputs.kernelsu_branch }}
       version: ${{ inputs.version || '' }}
@@ -131,4 +192,5 @@ jobs:
     uses: ./.github/workflows/get-manager.yml
     secrets: inherit
     with:
+      kernelsu_variant: ${{ inputs.kernelsu_variant }}
       kernelsu_variant: ${{ inputs.kernelsu_variant }}
