@@ -5,8 +5,14 @@ permissions:
 
 on:
   workflow_dispatch:
+    inputs:
+      force_refresh:
+        description: '强制全量刷新 (忽略现有配置，重新抓取所有版本)'
+        required: false
+        type: boolean
+        default: false
   schedule:
-    - cron: '0 0 * * 0'
+    - cron: '0 0 * * 0' # 每周日自动运行（增量模式）
 
 jobs:
   fetch-all-versions:
@@ -15,95 +21,100 @@ jobs:
       - name: 检出当前仓库代码
         uses: actions/checkout@v4
 
-      - name: 抓取全量历史 KMI 版本与 Sublevel (防限流版)
+      - name: 增量抓取 KMI 版本 (极速防限流版)
         run: |
           mkdir -p config
-          ENV_FILE="config/kmi_latest.env"
           JSON_FILE="config/kmi_versions.json"
+          ENV_FILE="config/kmi_latest.env"
+          FORCE_REFRESH="${{ github.event.inputs.force_refresh }}"
           
-          echo "# 自动生成的最新 KMI 快捷配置" > $ENV_FILE
-          echo "{" > $JSON_FILE
+          # 1. 尝试读取现有的 JSON 数据库
+          if [ -f "$JSON_FILE" ] && [ "$FORCE_REFRESH" != "true" ]; then
+            echo "📥 加载现有数据库进行增量更新..."
+            OLD_JSON=$(cat "$JSON_FILE")
+          else
+            echo "♻️ 强制全量模式或无旧配置，将重新抓取所有版本..."
+            OLD_JSON="{}"
+          fi
+
+          echo "{" > "$JSON_FILE.new"
+          echo "# 自动生成的最新 KMI 快捷配置" > "$ENV_FILE"
           
           BRANCHES=("android12-5.10" "android13-5.15" "android14-5.15" "android14-6.1" "android15-6.6" "android16-6.12")
           TOTAL_BRANCHES=${#BRANCHES[@]}
-          BRANCH_COUNT=0
           
-          echo "正在连接 Google 服务器，查询全量 Tags..."
+          echo "正在查询 Google 服务器全量 Tags..."
           ALL_TAGS=$(git ls-remote --tags https://android.googlesource.com/kernel/common | grep -o 'refs/tags/android.*' | sed 's/refs\/tags\///' | grep -v '\^{}')
           
-          for BRANCH in "${BRANCHES[@]}"; do
+          for i in "${!BRANCHES[@]}"; do
+            BRANCH="${BRANCHES[$i]}"
             echo "================================================"
-            echo "🔍 正在分析分支全量历史: $BRANCH"
-            BRANCH_COUNT=$((BRANCH_COUNT+1))
+            echo "🔍 正在分析分支: $BRANCH"
             
+            # 筛选该分支的 Tags
             BRANCH_TAGS=$(echo "$ALL_TAGS" | grep "^${BRANCH}-" | sort -V)
-            echo "  \"${BRANCH}\": [" >> $JSON_FILE
+            echo "  \"${BRANCH}\": [" >> "$JSON_FILE.new"
             
             if [ -n "$BRANCH_TAGS" ]; then
-              TAG_COUNT=$(echo "$BRANCH_TAGS" | wc -l)
-              CURRENT_INDEX=0
+              TAG_ARRAY=($BRANCH_TAGS)
+              TAG_COUNT=${#TAG_ARRAY[@]}
               
-              for TAG in $BRANCH_TAGS; do
-                CURRENT_INDEX=$((CURRENT_INDEX+1))
+              for j in "${!TAG_ARRAY[@]}"; do
+                TAG="${TAG_ARRAY[$j]}"
                 
-                # ================= 核心防封禁抓取逻辑 =================
-                MAX_RETRIES=4
-                RETRY_COUNT=0
-                SUBLEVEL=""
+                # 检查旧 JSON 里是否已经有这个 Tag 的有效小版本号 (排除 unknown)
+                EXISTING_SUB=$(echo "$OLD_JSON" | jq -r ".[\"${BRANCH}\"][] | select(.tag == \"${TAG}\") | .sublevel" 2>/dev/null | grep -v "unknown" | head -n 1 || echo "")
                 
-                while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-                  # 基础延迟，防止请求过快 (0.2秒)
-                  sleep 0.2 
-                  
-                  # 使用 curl -f，如果 Google 返回 429 或 404 等错误码，直接判定为失败
-                  API_RESULT=$(curl -s -f "https://android.googlesource.com/kernel/common/+/refs/tags/${TAG}/Makefile?format=TEXT" || echo "FAILED")
-                  
-                  if [ "$API_RESULT" != "FAILED" ]; then
-                    SUBLEVEL=$(echo "$API_RESULT" | base64 --decode | grep -E '^SUBLEVEL\s*=' | awk -F'=' '{print $2}' | tr -d ' ' | tr -d '\r')
-                    if [ -n "$SUBLEVEL" ]; then
-                      break # 成功拿到版本号，跳出重试循环
-                    fi
-                  fi
-                  
-                  # 如果失败，等待一段时间后重试 (依次等待 2s, 4s, 6s)
-                  RETRY_COUNT=$((RETRY_COUNT+1))
-                  if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-                    WAIT_TIME=$((RETRY_COUNT * 2))
-                    echo "  -> ⚠️ 抓取限流，等待 $WAIT_TIME 秒后重试 ($RETRY_COUNT/$MAX_RETRIES)..."
-                    sleep $WAIT_TIME
-                  fi
-                done
-                
-                # 如果试了4次还是失败，就标记为 unknown
-                [ -z "$SUBLEVEL" ] && SUBLEVEL="unknown"
-                # =======================================================
-                
-                echo "  -> [$CURRENT_INDEX/$TAG_COUNT] $TAG (小版本: $SUBLEVEL)"
-                
-                if [ $CURRENT_INDEX -lt $TAG_COUNT ]; then
-                  echo "    { \"tag\": \"$TAG\", \"sublevel\": \"$SUBLEVEL\" }," >> $JSON_FILE
+                if [ -n "$EXISTING_SUB" ]; then
+                  SUBLEVEL="$EXISTING_SUB"
+                  echo "  -> [$((j+1))/$TAG_COUNT] 跳过 (已有记录): $TAG -> $SUBLEVEL"
                 else
-                  echo "    { \"tag\": \"$TAG\", \"sublevel\": \"$SUBLEVEL\" }" >> $JSON_FILE
+                  # 只有数据库里没有，或者是 unknown，才发起请求
+                  echo "  -> [$((j+1))/$TAG_COUNT] 正在抓取: $TAG..."
                   
+                  # 内部抓取重试逻辑
+                  RETRY_COUNT=0
+                  SUBLEVEL=""
+                  while [ $RETRY_COUNT -lt 4 ]; do
+                    sleep 0.2 # 呼吸延迟
+                    API_RESULT=$(curl -s -f "https://android.googlesource.com/kernel/common/+/refs/tags/${TAG}/Makefile?format=TEXT" || echo "FAILED")
+                    
+                    if [ "$API_RESULT" != "FAILED" ]; then
+                      SUBLEVEL=$(echo "$API_RESULT" | base64 --decode | grep -E '^SUBLEVEL\s*=' | awk -F'=' '{print $2}' | tr -d ' ' | tr -d '\r')
+                      [ -n "$SUBLEVEL" ] && break
+                    fi
+                    
+                    RETRY_COUNT=$((RETRY_COUNT+1))
+                    WAIT_TIME=$((RETRY_COUNT * 2))
+                    echo "     ⚠️ 限流或失败，等待 ${WAIT_TIME}s 重试 ($RETRY_COUNT/4)..."
+                    sleep $WAIT_TIME
+                  done
+                  [ -z "$SUBLEVEL" ] && SUBLEVEL="unknown"
+                fi
+                
+                # 写入 JSON 数据
+                COMMA=$([ $((j+1)) -lt $TAG_COUNT ] && echo "," || echo "")
+                echo "    { \"tag\": \"$TAG\", \"sublevel\": \"$SUBLEVEL\" }$COMMA" >> "$JSON_FILE.new"
+                
+                # 如果是该分支的最后一个（最新的）Tag，写入 Env 快捷文件
+                if [ $((j+1)) -eq $TAG_COUNT ]; then
                   VAR_PREFIX=$(echo "${BRANCH}" | tr 'a-z' 'A-Z' | tr '-' '_' | tr '.' '_')
-                  echo "${VAR_PREFIX}_LATEST=${TAG}" >> $ENV_FILE
-                  echo "${VAR_PREFIX}_SUBLEVEL=${SUBLEVEL}" >> $ENV_FILE
+                  echo "${VAR_PREFIX}_LATEST=${TAG}" >> "$ENV_FILE"
+                  echo "${VAR_PREFIX}_SUBLEVEL=${SUBLEVEL}" >> "$ENV_FILE"
                 fi
               done
             else
               echo "⚠️ 未找到 $BRANCH 的任何历史 Tag"
             fi
             
-            if [ $BRANCH_COUNT -lt $TOTAL_BRANCHES ]; then
-              echo "  ]," >> $JSON_FILE
-            else
-              echo "  ]" >> $JSON_FILE
-            fi
+            # 闭合 JSON 数组
+            FOOTER=$([ $((i+1)) -lt $TOTAL_BRANCHES ] && echo "  ]," || echo "  ]")
+            echo "$FOOTER" >> "$JSON_FILE.new"
           done
           
-          echo "}" >> $JSON_FILE
-          echo "================================================"
-          echo "全量抓取完成！"
+          echo "}" >> "$JSON_FILE.new"
+          mv "$JSON_FILE.new" "$JSON_FILE"
+          echo "✅ 增量同步完成！"
 
       - name: 提交并推送生成的配置
         run: |
@@ -112,9 +123,9 @@ jobs:
           
           if [ -n "$(git status --porcelain config/)" ]; then
             git add config/kmi_latest.env config/kmi_versions.json
-            git commit -m "chore: 更新 KMI 历史全量版本库 (修复限流问题)"
+            git commit -m "chore: 增量更新 KMI 历史版本库"
             git push
-            echo "🎉 包含所有历史版本的 KMI 数据库已推送到代码库！"
+            echo "🎉 数据库已更新并推送到仓库！"
           else
             echo "KMI 版本库没有变化，无需提交。"
           fi
