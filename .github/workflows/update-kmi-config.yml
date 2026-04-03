@@ -124,7 +124,11 @@ jobs:
           if [ -n "$(git status --porcelain config/)" ]; then
             git add config/kmi_latest.env config/kmi_versions.json
             git commit -m "chore: 增量更新 KMI 历史版本库"
-            git push
+            
+            # 在推送前先拉取远端更新并变基，防止 ! [rejected] 错误
+            git pull --rebase origin ${{ github.ref_name }}
+            git push origin ${{ github.ref_name }}
+            
             echo "🎉 数据库已更新并推送到仓库！"
           else
             echo "KMI 版本库没有变化，无需提交。"
