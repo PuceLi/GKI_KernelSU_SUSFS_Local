@@ -15,7 +15,7 @@ jobs:
       - name: 检出当前仓库代码
         uses: actions/checkout@v4
 
-      - name: 抓取全量历史 KMI 版本与 Sublevel
+      - name: 抓取全量历史 KMI 版本与 Sublevel (防限流版)
         run: |
           mkdir -p config
           ENV_FILE="config/kmi_latest.env"
@@ -24,13 +24,11 @@ jobs:
           echo "# 自动生成的最新 KMI 快捷配置" > $ENV_FILE
           echo "{" > $JSON_FILE
           
-          # 增加了 android16-6.12
           BRANCHES=("android12-5.10" "android13-5.15" "android14-5.15" "android14-6.1" "android15-6.6" "android16-6.12")
           TOTAL_BRANCHES=${#BRANCHES[@]}
           BRANCH_COUNT=0
           
-          echo "正在连接 Google 服务器，查询 kernel/common 全量 Tags..."
-          # 获取所有安卓 tag，纯文本处理
+          echo "正在连接 Google 服务器，查询全量 Tags..."
           ALL_TAGS=$(git ls-remote --tags https://android.googlesource.com/kernel/common | grep -o 'refs/tags/android.*' | sed 's/refs\/tags\///' | grep -v '\^{}')
           
           for BRANCH in "${BRANCHES[@]}"; do
@@ -38,35 +36,55 @@ jobs:
             echo "🔍 正在分析分支全量历史: $BRANCH"
             BRANCH_COUNT=$((BRANCH_COUNT+1))
             
-            # 筛选出该分支的所有 Tag，并按版本号严格排序
             BRANCH_TAGS=$(echo "$ALL_TAGS" | grep "^${BRANCH}-" | sort -V)
-            
-            # 在 JSON 中开启该分支的数组
             echo "  \"${BRANCH}\": [" >> $JSON_FILE
             
             if [ -n "$BRANCH_TAGS" ]; then
-              # 计算该分支下有多少个历史版本
               TAG_COUNT=$(echo "$BRANCH_TAGS" | wc -l)
               CURRENT_INDEX=0
               
               for TAG in $BRANCH_TAGS; do
                 CURRENT_INDEX=$((CURRENT_INDEX+1))
                 
-                # 核心：利用 Gitiles API 直接读取该历史 Tag 下的 Makefile，提取小版本号
-                SUBLEVEL=$(curl -s "https://android.googlesource.com/kernel/common/+/refs/tags/${TAG}/Makefile?format=TEXT" | base64 --decode | grep -E '^SUBLEVEL\s*=' | awk -F'=' '{print $2}' | tr -d ' ' | tr -d '\r')
+                # ================= 核心防封禁抓取逻辑 =================
+                MAX_RETRIES=4
+                RETRY_COUNT=0
+                SUBLEVEL=""
+                
+                while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+                  # 基础延迟，防止请求过快 (0.2秒)
+                  sleep 0.2 
+                  
+                  # 使用 curl -f，如果 Google 返回 429 或 404 等错误码，直接判定为失败
+                  API_RESULT=$(curl -s -f "https://android.googlesource.com/kernel/common/+/refs/tags/${TAG}/Makefile?format=TEXT" || echo "FAILED")
+                  
+                  if [ "$API_RESULT" != "FAILED" ]; then
+                    SUBLEVEL=$(echo "$API_RESULT" | base64 --decode | grep -E '^SUBLEVEL\s*=' | awk -F'=' '{print $2}' | tr -d ' ' | tr -d '\r')
+                    if [ -n "$SUBLEVEL" ]; then
+                      break # 成功拿到版本号，跳出重试循环
+                    fi
+                  fi
+                  
+                  # 如果失败，等待一段时间后重试 (依次等待 2s, 4s, 6s)
+                  RETRY_COUNT=$((RETRY_COUNT+1))
+                  if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                    WAIT_TIME=$((RETRY_COUNT * 2))
+                    echo "  -> ⚠️ 抓取限流，等待 $WAIT_TIME 秒后重试 ($RETRY_COUNT/$MAX_RETRIES)..."
+                    sleep $WAIT_TIME
+                  fi
+                done
+                
+                # 如果试了4次还是失败，就标记为 unknown
                 [ -z "$SUBLEVEL" ] && SUBLEVEL="unknown"
+                # =======================================================
                 
-                echo "  -> [$CURRENT_INDEX/$TAG_COUNT] 抓取成功: $TAG (小版本: $SUBLEVEL)"
+                echo "  -> [$CURRENT_INDEX/$TAG_COUNT] $TAG (小版本: $SUBLEVEL)"
                 
-                # 写入 JSON 数组元素
                 if [ $CURRENT_INDEX -lt $TAG_COUNT ]; then
                   echo "    { \"tag\": \"$TAG\", \"sublevel\": \"$SUBLEVEL\" }," >> $JSON_FILE
                 else
-                  # 数组的最后一个元素，不要加逗号
                   echo "    { \"tag\": \"$TAG\", \"sublevel\": \"$SUBLEVEL\" }" >> $JSON_FILE
                   
-                  # 既然是严格排序的，最后一个必定是该分支的 最新版本 (Latest)
-                  # 我们把最新版本单独写入 env 文件，方便其他工作流快速读取
                   VAR_PREFIX=$(echo "${BRANCH}" | tr 'a-z' 'A-Z' | tr '-' '_' | tr '.' '_')
                   echo "${VAR_PREFIX}_LATEST=${TAG}" >> $ENV_FILE
                   echo "${VAR_PREFIX}_SUBLEVEL=${SUBLEVEL}" >> $ENV_FILE
@@ -76,7 +94,6 @@ jobs:
               echo "⚠️ 未找到 $BRANCH 的任何历史 Tag"
             fi
             
-            # 闭合该分支的 JSON 数组
             if [ $BRANCH_COUNT -lt $TOTAL_BRANCHES ]; then
               echo "  ]," >> $JSON_FILE
             else
@@ -95,7 +112,7 @@ jobs:
           
           if [ -n "$(git status --porcelain config/)" ]; then
             git add config/kmi_latest.env config/kmi_versions.json
-            git commit -m "chore: 更新 KMI 历史全量版本库"
+            git commit -m "chore: 更新 KMI 历史全量版本库 (修复限流问题)"
             git push
             echo "🎉 包含所有历史版本的 KMI 数据库已推送到代码库！"
           else
