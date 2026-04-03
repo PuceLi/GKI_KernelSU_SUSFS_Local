@@ -269,10 +269,10 @@ jobs:
           $REPO --trace sync -c -j$(nproc --all) --no-tags --fail-fast
           echo "REMOTE_BRANCH=$REMOTE_BRANCH" >> $GITHUB_ENV
           
-      - name: 升级 Clang 19 编译器
+      - name: 升级 Clang 编译器
         working-directory: ${{ env.KERNEL_ROOT }}
         run: |
-          # 目标版本：AOSP main 分支的 Clang 19 预编译快照
+          # 目标版本：AOSP main 分支的 Clang 预编译快照
           TARGET_CLANG_VER="clang-r574158"
           
           # 获取系统默认拉取的旧版 Clang 目录
@@ -286,13 +286,16 @@ jobs:
             mkdir -p /tmp/new_clang
             cd /tmp/new_clang
             
+            # 【重要】清理残留，防止旧文件干扰或引发 curl 报错
+            rm -f clang.tar.gz
+            
             CLANG_URL="https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/${TARGET_CLANG_VER}.tar.gz"
-            echo "正在从 AOSP 现场打包并下载最新 Clang (防断流模式)..."
+            echo "正在从 AOSP 现场打包并下载最新 Clang..."
             
-            # 使用支持断点续传和自动重试的 curl 命令
-            curl -f -L -C - --retry 5 --retry-all-errors --retry-delay 3 -o clang.tar.gz "$CLANG_URL"
+            # 【核心修改】去掉了 -C -，因为 Google Archive 不支持断点续传，强行使用会导致 400 Bad Request
+            curl -f -L --retry 5 --retry-all-errors --retry-delay 3 -o clang.tar.gz "$CLANG_URL"
             
-            # 校验文件完整性，防止被 Google 限流拦截返回错误网页
+            # 校验文件完整性
             if ! tar -tzf clang.tar.gz >/dev/null 2>&1; then
                 echo "❌ 致命错误: 下载的文件损坏或被 Google 限流拦截！"
                 exit 1
@@ -303,6 +306,7 @@ jobs:
             
             cd ${{ env.KERNEL_ROOT }}
             
+            # 备份旧版本并替换
             mv "$DEFAULT_CLANG_DIR" "${DEFAULT_CLANG_DIR}_bak"
             mv /tmp/new_clang "$DEFAULT_CLANG_DIR"
             
@@ -312,7 +316,7 @@ jobs:
             echo "当前已是目标 Clang 版本，无需下载升级。"
           fi
           
-          # --- 新增：验证 LLVM 其他核心组件的版本 ---
+          # --- 验证 LLVM 其他核心组件的版本 ---
           echo "验证 LLVM 链接器 (LLD) 版本："
           "$DEFAULT_CLANG_DIR/bin/ld.lld" --version
           
@@ -323,8 +327,9 @@ jobs:
           "$DEFAULT_CLANG_DIR/bin/llvm-objdump" --version
 
           echo "正在全局解除 -Werror 限制 (最终完美版正则)..."
+          # 针对 Clang 19+ 极其严格的校验，移除所有可能中断编译的 -Werror
           find . -type f \( -name "Makefile" -o -name "Kbuild" \) -exec sed -i -E 's/(^|[[:space:]])-Werror([=-][a-zA-Z0-9_-]+)?/\1/g' {} +
-          find common/scripts -type f -name "Makefile.build" -exec sed -i -E 's/(^|[[:space:]])-Werror([=-][a-zA-Z0-9_-]+)?/\1/g' {} + 2>/dev/null || true 
+          find common/scripts -type f -name "Makefile.build" -exec sed -i -E 's/(^|[[:space:]])-Werror([=-][a-zA-Z0-9_-]+)?/\1/g' {} + 2>/dev/null || true
 
       - name: 修复小米 DRM 闪屏问题 (精准锁定官方 Tag 版)
         if: inputs.kernel_version == '6.1'
