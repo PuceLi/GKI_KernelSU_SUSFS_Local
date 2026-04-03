@@ -1,4 +1,4 @@
-name: 自动升级 KMI 版本号
+name: 自动更新 KMI 版本配置
 
 permissions:
   contents: write # 允许工作流向仓库提交代码
@@ -6,76 +6,91 @@ permissions:
 on:
   workflow_dispatch: # 支持手动触发
   schedule:
-    - cron: '0 0 * * 0' # 每周日午夜自动运行一次，追踪官方最新版本
+    - cron: '0 0 * * 0' # 每周日午夜自动运行
 
 jobs:
   fetch-and-update:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: 检出当前仓库代码
         uses: actions/checkout@v4
 
-      - name: Fetch KMI Tags from AOSP
+      - name: 从 AOSP 官方拉取 KMI 版本清单
         run: |
-          echo "正在从 AOSP Manifest 仓库获取最新 Tags..."
-          # 获取所有带 android 前缀的 tag，过滤掉带有 ^{} 的重复项，并按版本号排序
-          ALL_TAGS=$(git ls-remote --tags https://android.googlesource.com/kernel/manifest | grep -o 'refs/tags/android.*' | sed 's/refs\/tags\///' | grep -v '\^{}' | sort -V)
+          echo "正在初始化 AOSP Manifest 仓库..."
+          git init aosp_manifest
+          cd aosp_manifest
+          git remote add origin https://android.googlesource.com/kernel/manifest
           
-          mkdir -p config
-          CONFIG_FILE="config/kmi_latest.env"
-          JSON_FILE="config/kmi_versions.json"
+          mkdir -p ../config
+          CONFIG_FILE="../config/kmi_latest.env"
+          JSON_FILE="../config/kmi_versions.json"
           
           echo "# 自动生成的 KMI 版本配置" > $CONFIG_FILE
           echo "{" > $JSON_FILE
           
-          # 定义你需要追踪的基础分支组合
+          # 你需要追踪的基础分支
           BRANCHES=("android12-5.10" "android13-5.15" "android14-5.15" "android14-6.1" "android15-6.6")
           
           TOTAL=${#BRANCHES[@]}
           COUNT=0
           
           for BRANCH in "${BRANCHES[@]}"; do
-            # 筛选出特定分支的最新一个 Tag (例如 android14-6.1-2024-01_r2)
-            LATEST_TAG=$(echo "$ALL_TAGS" | grep "^${BRANCH}-" | tail -n 1)
+            FULL_BRANCH="common-${BRANCH}"
+            echo "------------------------------------------------"
+            echo "🔍 正在检查分支: $FULL_BRANCH"
             
-            if [ -n "$LATEST_TAG" ]; then
-              # 提取 os_patch_level 和 revision
-              # 格式形如: android14-6.1-2024-01_r2 -> 提取 2024-01_r2
-              PATCH_REV=${LATEST_TAG#${BRANCH}-}
+            # 只浅层拉取特定分支的第一层提交（深度1），速度极快，防止仓库过大
+            if git fetch origin $FULL_BRANCH --depth=1; then
+              # 列出该分支下所有的 .xml 文件
+              XML_FILES=$(git ls-tree -r FETCH_HEAD --name-only | grep '\.xml$')
               
-              # 写入 ENV 文件 (方便 bash 直接 source)
-              # 将破折号和点替换为下划线作为变量名，如 A14_6_1_LATEST
-              VAR_NAME=$(echo "${BRANCH}_LATEST" | tr 'a-z' 'A-Z' | tr '-' '_' | tr '.' '_')
-              echo "${VAR_NAME}=${LATEST_TAG}" >> $CONFIG_FILE
+              # 匹配形如 android14-6.1-XXXX.xml 的文件，按版本号排序并提取最后一行
+              LATEST_XML=$(echo "$XML_FILES" | grep "^${BRANCH}-" | sort -V | tail -n 1)
               
-              # 写入 JSON 文件 (方便更复杂的解析逻辑)
-              COUNT=$((COUNT+1))
-              if [ $COUNT -lt $TOTAL ]; then
-                echo "  \"${BRANCH}\": \"${LATEST_TAG}\"," >> $JSON_FILE
+              if [ -n "$LATEST_XML" ]; then
+                # 去除 .xml 后缀，得到纯版本名
+                LATEST_TAG="${LATEST_XML%.xml}"
+                
+                VAR_NAME=$(echo "${BRANCH}_LATEST" | tr 'a-z' 'A-Z' | tr '-' '_' | tr '.' '_')
+                echo "${VAR_NAME}=${LATEST_TAG}" >> $CONFIG_FILE
+                
+                COUNT=$((COUNT+1))
+                if [ $COUNT -lt $TOTAL ]; then
+                  echo "  \"${BRANCH}\": \"${LATEST_TAG}\"," >> $JSON_FILE
+                else
+                  echo "  \"${BRANCH}\": \"${LATEST_TAG}\"" >> $JSON_FILE
+                fi
+                echo "✅ 成功提取最新 Manifest: ${LATEST_TAG}"
               else
-                echo "  \"${BRANCH}\": \"${LATEST_TAG}\"" >> $JSON_FILE
+                echo "⚠️ 未在该分支找到符合命名规则的 release xml，已找到的文件如下："
+                echo "$XML_FILES"
+                # 写入空值占位，防止 JSON 格式破坏
+                COUNT=$((COUNT+1))
+                [ $COUNT -lt $TOTAL ] && echo "  \"${BRANCH}\": \"\"," >> $JSON_FILE || echo "  \"${BRANCH}\": \"\"" >> $JSON_FILE
               fi
-              
-              echo "找到 ${BRANCH} 的最新版本: ${LATEST_TAG}"
+            else
+              echo "❌ 无法从远端拉取分支: $FULL_BRANCH"
+              COUNT=$((COUNT+1))
+              [ $COUNT -lt $TOTAL ] && echo "  \"${BRANCH}\": \"\"," >> $JSON_FILE || echo "  \"${BRANCH}\": \"\"" >> $JSON_FILE
             fi
           done
           
           echo "}" >> $JSON_FILE
-          
-          echo "配置生成完毕："
+          echo "------------------------------------------------"
+          echo "文件生成完毕！kmi_latest.env 预览："
           cat $CONFIG_FILE
 
-      - name: Commit and Push Changes
+      - name: 提交并推送生成的配置
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # 检查是否有文件发生变化
           if [ -n "$(git status --porcelain config/)" ]; then
             git add config/kmi_latest.env config/kmi_versions.json
-            git commit -m "chore: auto-update KMI versions config"
+            git commit -m "chore: 自动更新 KMI 版本配置"
             git push
-            echo "最新 KMI 配置已推送到仓库！"
+            echo "🎉 最新 KMI 配置文件已推送到代码库！"
           else
             echo "KMI 版本没有变化，无需提交。"
           fi
