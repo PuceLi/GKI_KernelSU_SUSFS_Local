@@ -116,7 +116,7 @@ jobs:
       time: ${{ steps.parse.outputs.time }}
     steps:
       - name: 检出代码读取配置
-        uses: actions/checkout@v64
+        uses: actions/checkout@v6
       
       - name: 智能解析 KMI 版本与构建时间
         id: parse

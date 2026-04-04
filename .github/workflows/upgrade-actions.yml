@@ -12,7 +12,7 @@ jobs:
     steps:
       # 注意：这个新脚本自己一上来就直接用 v5 啦！
       - name: 检出当前仓库代码
-        uses: actions/checkout@v65
+        uses: actions/checkout@v6
 
       - name: 批量查找并替换 v5
         run: |
