@@ -1,0 +1,46 @@
+name: 紧急维护 - 一键批量升级 Checkout 插件至 v5
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch: # 手动触发一次
+
+jobs:
+  upgrade-checkout:
+    runs-on: ubuntu-latest
+    steps:
+      # 注意：这个新脚本自己一上来就直接用 v5 啦！
+      - name: 检出当前仓库代码
+        uses: actions/checkout@v5
+
+      - name: 批量查找并替换 v5
+        run: |
+          echo "🔍 开始扫描 .github/workflows/ 目录下的所有工作流文件..."
+          
+          # 使用强大的 sed 正则表达式，将所有 actions/checkout@v[数字] 强制替换为 v5
+          find .github/workflows/ -type f -name "*.yml" -exec sed -i -E 's/actions\/checkout@v[0-9]+/actions\/checkout@v5/g' {} +
+          
+          echo "✅ 替换完成！"
+          
+          # 检查一下改了哪些文件，方便在日志里确认
+          git diff --stat
+
+      - name: 提交并推送更改
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # 检查工作流目录是否有被修改的文件
+          if [ -n "$(git status --porcelain .github/workflows/)" ]; then
+            git add .github/workflows/
+            git commit -m "chore: 批量升级所有工作流的 actions/checkout 插件至 v5 (消除 Node.js 20 警告)"
+            
+            # 防冲突老规矩
+            git pull --rebase origin ${{ github.ref_name }}
+            git push origin ${{ github.ref_name }}
+            
+            echo "🎉 全部升级完成并已推送到仓库！"
+          else
+            echo "没有找到需要升级的旧版插件，或已经全是 v5 了。"
+          fi
