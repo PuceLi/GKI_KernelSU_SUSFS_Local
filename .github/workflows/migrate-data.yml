@@ -1,88 +1,53 @@
-name: 数据迁移 - 建立分层聚合数据库
+name: 紧急修复 - 格式化 JSON 并移回 Config 目录
 
 permissions:
   contents: write
 
 on:
-  workflow_dispatch: # 手动触发一次性迁移
+  workflow_dispatch: # 手动触发
 
 jobs:
-  migrate:
+  fix-and-move:
     runs-on: ubuntu-latest
     steps:
-      - name: 检出当前仓库代码
+      - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 执行本地分层归档与深度聚合
+      - name: 恢复漂亮的 JSON 排版并转移目录
         run: |
-          mkdir -p data
-          echo "📦 开始读取现有的分散 JSON 文件并重构..."
-
-          # 遍历目前 config 目录下所有的 .json 文件 (比如 5.10.json, 6.1.json)
-          for FILE in config/*.json; do
-            # 排除可能误匹配到的空结果
-            if [ ! -f "$FILE" ]; then continue; fi
+          # 遍历目前 data 目录下的所有 JSON 文件
+          for FILE in $(find data -type f -name "*.json"); do
+            # 获取相对路径，例如 android13/5.15.json
+            REL_PATH=${FILE#data/}
             
-            echo "================================================"
-            echo "📥 正在解析: $FILE"
+            # 设置正确的 config 目标路径
+            TARGET_FILE="config/${REL_PATH}"
+            mkdir -p "$(dirname "$TARGET_FILE")"
             
-            # 获取这个文件里的顶层分支名 (比如 android14-6.1)
-            BRANCHES=$(jq -r 'keys[]' "$FILE")
+            echo "正在修复: $FILE -> $TARGET_FILE"
             
-            for BRANCH in $BRANCHES; do
-              # 提取安卓版本和内核版本
-              A_VER=$(echo "$BRANCH" | awk -F'-' '{print $1}')
-              K_VER=$(echo "$BRANCH" | awk -F'-' '{print $2}')
-              
-              TARGET_DIR="data/${A_VER}"
-              mkdir -p "$TARGET_DIR"
-              TARGET_FILE="${TARGET_DIR}/${K_VER}.json"
-              
-              echo "✂️ 正在聚合: $BRANCH -> 归档至 $TARGET_FILE"
-              
-              # 【核心黑魔法】：
-              # 1. 把之前的 latest 和 obsolete 重新合并成一个大数组
-              # 2. 过滤掉 unknown
-              # 3. 按小版本号 (sublevel) 分组并倒序
-              # 4. 把同组的 Tag 合并成数组，取前 4 组作为 latest
-              jq -c "
-                .\"$BRANCH\" | (.latest + .obsolete) | 
-                map(select(.sublevel != \"unknown\")) | 
-                group_by(.sublevel | tonumber) | 
-                reverse | 
-                map({
-                  sublevel: .[0].sublevel,
-                  tags: map(.tag) | sort | reverse
-                }) | 
-                {
-                  latest: .[:4],
-                  obsolete: .[4:]
-                }
-              " "$FILE" > "$TARGET_FILE"
-            done
+            # 【关键修复】：只用 jq '.'，不加 -c 参数，它会自动把单行 JSON 展开成漂亮的多行带缩进格式！
+            jq '.' "$FILE" > "$TARGET_FILE"
           done
+          
+          echo "✅ 所有文件已恢复排版并移动到 config/ 目录！"
+          
+          # 展示一下修复后的前 15 行看看效果
+          head -n 15 config/android14/6.1.json || true
 
-          echo "✅ 迁移完成！新生成的目录结构如下："
-          ls -R data/
-
-      - name: 提交推送到 data 目录并清理旧 config
+      - name: 提交并清理错误目录
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          if [ -d "data" ]; then
-            git add data/
-            
-            # 既然已经迁移到 data 目录，就把 config 下这些临时过渡的 json 删掉
-            # (注意：保留 kmi_latest.env 不删)
-            git rm config/*.json 2>/dev/null || true
-            
-            git commit -m "chore: 终极架构迁移 (按安卓版本分目录，深度聚合小版本号)"
-            
-            git pull --rebase origin ${{ github.ref_name }}
-            git push origin ${{ github.ref_name }}
-            
-            echo "🎉 数据已完美蜕变并存入 data 目录！"
-          else
-            echo "没有产生任何数据变动。"
-          fi
+          # 添加新的 config 目录
+          git add config/
+          
+          # 删掉整个搞错的 data 目录
+          git rm -r data/ || true
+          
+          git commit -m "fix: 将 KMI 数据库移回 config 目录并恢复 JSON 漂亮排版"
+          
+          git pull --rebase origin ${{ github.ref_name }}
+          git push origin ${{ github.ref_name }}
+          echo "🎉 修复完成！强迫症得救了！"
