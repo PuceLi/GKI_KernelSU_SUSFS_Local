@@ -1,0 +1,1484 @@
+{
+  "android12-5.10": {
+    "latest": [
+      {
+        "tag": "android12-5.10-2025-12_r2",
+        "sublevel": "246"
+      },
+      {
+        "tag": "android12-5.10-2025-12_r1",
+        "sublevel": "246"
+      },
+      {
+        "tag": "android12-5.10-2025-09_r4",
+        "sublevel": "240"
+      },
+      {
+        "tag": "android12-5.10-2025-09_r3",
+        "sublevel": "240"
+      }
+    ],
+    "obsolete": [
+      {
+        "tag": "android12-5.10-2025-09_r2",
+        "sublevel": "240"
+      },
+      {
+        "tag": "android12-5.10-2025-09_r1",
+        "sublevel": "240"
+      },
+      {
+        "tag": "android12-5.10-2025-06_r5",
+        "sublevel": "237"
+      },
+      {
+        "tag": "android12-5.10-2025-06_r4",
+        "sublevel": "237"
+      },
+      {
+        "tag": "android12-5.10-2025-06_r3",
+        "sublevel": "237"
+      },
+      {
+        "tag": "android12-5.10-2025-06_r2",
+        "sublevel": "237"
+      },
+      {
+        "tag": "android12-5.10-2025-06_r1",
+        "sublevel": "237"
+      },
+      {
+        "tag": "android12-5.10-2025-05_r8",
+        "sublevel": "236"
+      },
+      {
+        "tag": "android12-5.10-2025-05_r7",
+        "sublevel": "236"
+      },
+      {
+        "tag": "android12-5.10-2025-05_r6",
+        "sublevel": "236"
+      },
+      {
+        "tag": "android12-5.10-2025-05_r5",
+        "sublevel": "236"
+      },
+      {
+        "tag": "android12-5.10-2025-05_r4",
+        "sublevel": "236"
+      },
+      {
+        "tag": "android12-5.10-2025-05_r3",
+        "sublevel": "236"
+      },
+      {
+        "tag": "android12-5.10-2025-05_r2",
+        "sublevel": "236"
+      },
+      {
+        "tag": "android12-5.10-2025-05_r1",
+        "sublevel": "236"
+      },
+      {
+        "tag": "android12-5.10-2025-02_r6",
+        "sublevel": "233"
+      },
+      {
+        "tag": "android12-5.10-2025-02_r5",
+        "sublevel": "233"
+      },
+      {
+        "tag": "android12-5.10-2025-02_r4",
+        "sublevel": "233"
+      },
+      {
+        "tag": "android12-5.10-2025-02_r3",
+        "sublevel": "233"
+      },
+      {
+        "tag": "android12-5.10-2025-02_r2",
+        "sublevel": "233"
+      },
+      {
+        "tag": "android12-5.10-2025-02_r1",
+        "sublevel": "233"
+      },
+      {
+        "tag": "android12-5.10-2024-11_r10",
+        "sublevel": "226"
+      },
+      {
+        "tag": "android12-5.10-2024-11_r9",
+        "sublevel": "226"
+      },
+      {
+        "tag": "android12-5.10-2024-11_r8",
+        "sublevel": "226"
+      },
+      {
+        "tag": "android12-5.10-2024-11_r7",
+        "sublevel": "226"
+      },
+      {
+        "tag": "android12-5.10-2024-11_r6",
+        "sublevel": "226"
+      },
+      {
+        "tag": "android12-5.10-2024-11_r5",
+        "sublevel": "226"
+      },
+      {
+        "tag": "android12-5.10-2024-11_r4",
+        "sublevel": "226"
+      },
+      {
+        "tag": "android12-5.10-2024-11_r3",
+        "sublevel": "226"
+      },
+      {
+        "tag": "android12-5.10-2024-11_r2",
+        "sublevel": "226"
+      },
+      {
+        "tag": "android12-5.10-2024-11_r1",
+        "sublevel": "226"
+      },
+      {
+        "tag": "android12-5.10-2024-08_r15",
+        "sublevel": "218"
+      },
+      {
+        "tag": "android12-5.10-2024-08_r14",
+        "sublevel": "218"
+      },
+      {
+        "tag": "android12-5.10-2024-08_r13",
+        "sublevel": "218"
+      },
+      {
+        "tag": "android12-5.10-2024-08_r12",
+        "sublevel": "218"
+      },
+      {
+        "tag": "android12-5.10-2024-08_r11",
+        "sublevel": "218"
+      },
+      {
+        "tag": "android12-5.10-2024-08_r10",
+        "sublevel": "218"
+      },
+      {
+        "tag": "android12-5.10-2024-08_r9",
+        "sublevel": "218"
+      },
+      {
+        "tag": "android12-5.10-2024-08_r8",
+        "sublevel": "218"
+      },
+      {
+        "tag": "android12-5.10-2024-08_r7",
+        "sublevel": "218"
+      },
+      {
+        "tag": "android12-5.10-2024-08_r6",
+        "sublevel": "218"
+      },
+      {
+        "tag": "android12-5.10-2024-08_r5",
+        "sublevel": "218"
+      },
+      {
+        "tag": "android12-5.10-2024-08_r4",
+        "sublevel": "218"
+      },
+      {
+        "tag": "android12-5.10-2024-08_r3",
+        "sublevel": "218"
+      },
+      {
+        "tag": "android12-5.10-2024-08_r2",
+        "sublevel": "218"
+      },
+      {
+        "tag": "android12-5.10-2024-08_r1",
+        "sublevel": "218"
+      },
+      {
+        "tag": "android12-5.10-2024-05_r13",
+        "sublevel": "209"
+      },
+      {
+        "tag": "android12-5.10-2024-05_r12",
+        "sublevel": "209"
+      },
+      {
+        "tag": "android12-5.10-2024-05_r11",
+        "sublevel": "209"
+      },
+      {
+        "tag": "android12-5.10-2024-05_r10",
+        "sublevel": "209"
+      },
+      {
+        "tag": "android12-5.10-2024-05_r9",
+        "sublevel": "209"
+      },
+      {
+        "tag": "android12-5.10-2024-05_r8",
+        "sublevel": "209"
+      },
+      {
+        "tag": "android12-5.10-2024-05_r7",
+        "sublevel": "209"
+      },
+      {
+        "tag": "android12-5.10-2024-05_r6",
+        "sublevel": "209"
+      },
+      {
+        "tag": "android12-5.10-2024-05_r5",
+        "sublevel": "209"
+      },
+      {
+        "tag": "android12-5.10-2024-05_r4",
+        "sublevel": "209"
+      },
+      {
+        "tag": "android12-5.10-2024-05_r3",
+        "sublevel": "209"
+      },
+      {
+        "tag": "android12-5.10-2024-05_r2",
+        "sublevel": "209"
+      },
+      {
+        "tag": "android12-5.10-2024-05_r1",
+        "sublevel": "209"
+      },
+      {
+        "tag": "android12-5.10-2024-03_r9",
+        "sublevel": "205"
+      },
+      {
+        "tag": "android12-5.10-2024-03_r8",
+        "sublevel": "205"
+      },
+      {
+        "tag": "android12-5.10-2024-03_r7",
+        "sublevel": "205"
+      },
+      {
+        "tag": "android12-5.10-2024-03_r6",
+        "sublevel": "205"
+      },
+      {
+        "tag": "android12-5.10-2024-03_r5",
+        "sublevel": "205"
+      },
+      {
+        "tag": "android12-5.10-2024-03_r4",
+        "sublevel": "205"
+      },
+      {
+        "tag": "android12-5.10-2024-03_r3",
+        "sublevel": "205"
+      },
+      {
+        "tag": "android12-5.10-2024-03_r2",
+        "sublevel": "205"
+      },
+      {
+        "tag": "android12-5.10-2024-03_r1",
+        "sublevel": "205"
+      },
+      {
+        "tag": "android12-5.10-2024-01_r17",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2024-01_r16",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2024-01_r15",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2024-01_r14",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2024-01_r13",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2024-01_r12",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2024-01_r11",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2024-01_r10",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2024-01_r9",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2024-01_r8",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2024-01_r7",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2024-01_r6",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2024-01_r5",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2024-01_r4",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2024-01_r3",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2024-01_r2",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2024-01_r1",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2023-11_r14",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2023-11_r13",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2023-11_r12",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2023-11_r11",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2023-11_r10",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2023-11_r9",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2023-11_r8",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2023-11_r7",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2023-11_r6",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2023-11_r5",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2023-11_r4",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2023-11_r3",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2023-11_r2",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2023-11_r1",
+        "sublevel": "198"
+      },
+      {
+        "tag": "android12-5.10-2023-09_r3",
+        "sublevel": "185"
+      },
+      {
+        "tag": "android12-5.10-2023-09_r2",
+        "sublevel": "185"
+      },
+      {
+        "tag": "android12-5.10-2023-09_r1",
+        "sublevel": "185"
+      },
+      {
+        "tag": "android12-5.10-2023-07_r8",
+        "sublevel": "177"
+      },
+      {
+        "tag": "android12-5.10-2023-07_r7",
+        "sublevel": "177"
+      },
+      {
+        "tag": "android12-5.10-2023-07_r6",
+        "sublevel": "177"
+      },
+      {
+        "tag": "android12-5.10-2023-07_r5",
+        "sublevel": "177"
+      },
+      {
+        "tag": "android12-5.10-2023-07_r4",
+        "sublevel": "177"
+      },
+      {
+        "tag": "android12-5.10-2023-07_r3",
+        "sublevel": "177"
+      },
+      {
+        "tag": "android12-5.10-2023-07_r2",
+        "sublevel": "177"
+      },
+      {
+        "tag": "android12-5.10-2023-07_r1",
+        "sublevel": "177"
+      },
+      {
+        "tag": "android12-5.10-2023-05_r8",
+        "sublevel": "168"
+      },
+      {
+        "tag": "android12-5.10-2023-05_r7",
+        "sublevel": "168"
+      },
+      {
+        "tag": "android12-5.10-2023-05_r6",
+        "sublevel": "168"
+      },
+      {
+        "tag": "android12-5.10-2023-05_r5",
+        "sublevel": "168"
+      },
+      {
+        "tag": "android12-5.10-2023-05_r4",
+        "sublevel": "168"
+      },
+      {
+        "tag": "android12-5.10-2023-05_r3",
+        "sublevel": "168"
+      },
+      {
+        "tag": "android12-5.10-2023-05_r2",
+        "sublevel": "168"
+      },
+      {
+        "tag": "android12-5.10-2023-05_r1",
+        "sublevel": "168"
+      },
+      {
+        "tag": "android12-5.10-2023-04_r9",
+        "sublevel": "168"
+      },
+      {
+        "tag": "android12-5.10-2023-04_r8",
+        "sublevel": "168"
+      },
+      {
+        "tag": "android12-5.10-2023-04_r7",
+        "sublevel": "168"
+      },
+      {
+        "tag": "android12-5.10-2023-04_r6",
+        "sublevel": "168"
+      },
+      {
+        "tag": "android12-5.10-2023-04_r5",
+        "sublevel": "168"
+      },
+      {
+        "tag": "android12-5.10-2023-04_r4",
+        "sublevel": "168"
+      },
+      {
+        "tag": "android12-5.10-2023-04_r3",
+        "sublevel": "168"
+      },
+      {
+        "tag": "android12-5.10-2023-04_r2",
+        "sublevel": "168"
+      },
+      {
+        "tag": "android12-5.10-2023-04_r1",
+        "sublevel": "168"
+      },
+      {
+        "tag": "android12-5.10-2023-03_r9",
+        "sublevel": "160"
+      },
+      {
+        "tag": "android12-5.10-2023-03_r8",
+        "sublevel": "160"
+      },
+      {
+        "tag": "android12-5.10-2023-03_r7",
+        "sublevel": "160"
+      },
+      {
+        "tag": "android12-5.10-2023-03_r6",
+        "sublevel": "160"
+      },
+      {
+        "tag": "android12-5.10-2023-03_r5",
+        "sublevel": "160"
+      },
+      {
+        "tag": "android12-5.10-2023-03_r4",
+        "sublevel": "160"
+      },
+      {
+        "tag": "android12-5.10-2023-03_r3",
+        "sublevel": "160"
+      },
+      {
+        "tag": "android12-5.10-2023-03_r2",
+        "sublevel": "160"
+      },
+      {
+        "tag": "android12-5.10-2023-03_r1",
+        "sublevel": "160"
+      },
+      {
+        "tag": "android12-5.10-2023-02_r11",
+        "sublevel": "160"
+      },
+      {
+        "tag": "android12-5.10-2023-02_r10",
+        "sublevel": "160"
+      },
+      {
+        "tag": "android12-5.10-2023-02_r9",
+        "sublevel": "160"
+      },
+      {
+        "tag": "android12-5.10-2023-02_r8",
+        "sublevel": "160"
+      },
+      {
+        "tag": "android12-5.10-2023-02_r7",
+        "sublevel": "160"
+      },
+      {
+        "tag": "android12-5.10-2023-02_r6",
+        "sublevel": "160"
+      },
+      {
+        "tag": "android12-5.10-2023-02_r5",
+        "sublevel": "160"
+      },
+      {
+        "tag": "android12-5.10-2023-02_r4",
+        "sublevel": "160"
+      },
+      {
+        "tag": "android12-5.10-2023-02_r3",
+        "sublevel": "160"
+      },
+      {
+        "tag": "android12-5.10-2023-02_r2",
+        "sublevel": "160"
+      },
+      {
+        "tag": "android12-5.10-2023-02_r1",
+        "sublevel": "160"
+      },
+      {
+        "tag": "android12-5.10-2023-01_r7",
+        "sublevel": "149"
+      },
+      {
+        "tag": "android12-5.10-2023-01_r6",
+        "sublevel": "149"
+      },
+      {
+        "tag": "android12-5.10-2023-01_r5",
+        "sublevel": "149"
+      },
+      {
+        "tag": "android12-5.10-2023-01_r4",
+        "sublevel": "149"
+      },
+      {
+        "tag": "android12-5.10-2023-01_r3",
+        "sublevel": "149"
+      },
+      {
+        "tag": "android12-5.10-2023-01_r2",
+        "sublevel": "149"
+      },
+      {
+        "tag": "android12-5.10-2023-01_r1",
+        "sublevel": "149"
+      },
+      {
+        "tag": "android12-5.10-2022-12_r14",
+        "sublevel": "149"
+      },
+      {
+        "tag": "android12-5.10-2022-12_r13",
+        "sublevel": "149"
+      },
+      {
+        "tag": "android12-5.10-2022-12_r12",
+        "sublevel": "149"
+      },
+      {
+        "tag": "android12-5.10-2022-12_r11",
+        "sublevel": "149"
+      },
+      {
+        "tag": "android12-5.10-2022-12_r10",
+        "sublevel": "149"
+      },
+      {
+        "tag": "android12-5.10-2022-12_r9",
+        "sublevel": "149"
+      },
+      {
+        "tag": "android12-5.10-2022-12_r8",
+        "sublevel": "149"
+      },
+      {
+        "tag": "android12-5.10-2022-12_r7",
+        "sublevel": "149"
+      },
+      {
+        "tag": "android12-5.10-2022-12_r6",
+        "sublevel": "149"
+      },
+      {
+        "tag": "android12-5.10-2022-12_r5",
+        "sublevel": "149"
+      },
+      {
+        "tag": "android12-5.10-2022-12_r4",
+        "sublevel": "149"
+      },
+      {
+        "tag": "android12-5.10-2022-12_r3",
+        "sublevel": "149"
+      },
+      {
+        "tag": "android12-5.10-2022-12_r2",
+        "sublevel": "149"
+      },
+      {
+        "tag": "android12-5.10-2022-12_r1",
+        "sublevel": "149"
+      },
+      {
+        "tag": "android12-5.10-2022-11_r15",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-11_r14",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-11_r13",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-11_r12",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-11_r11",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-11_r10",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-11_r9",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-11_r8",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-11_r7",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-11_r6",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-11_r5",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-11_r4",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-11_r3",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-11_r2",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-11_r1",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-10_r13",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-10_r12",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-10_r11",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-10_r10",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-10_r9",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-10_r8",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-10_r7",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-10_r6",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-10_r5",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-10_r4",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-10_r3",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-10_r2",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-10_r1",
+        "sublevel": "136"
+      },
+      {
+        "tag": "android12-5.10-2022-09_r9",
+        "sublevel": "117"
+      },
+      {
+        "tag": "android12-5.10-2022-09_r8",
+        "sublevel": "117"
+      },
+      {
+        "tag": "android12-5.10-2022-09_r7",
+        "sublevel": "117"
+      },
+      {
+        "tag": "android12-5.10-2022-09_r6",
+        "sublevel": "117"
+      },
+      {
+        "tag": "android12-5.10-2022-09_r5",
+        "sublevel": "117"
+      },
+      {
+        "tag": "android12-5.10-2022-09_r4",
+        "sublevel": "117"
+      },
+      {
+        "tag": "android12-5.10-2022-09_r3",
+        "sublevel": "117"
+      },
+      {
+        "tag": "android12-5.10-2022-09_r2",
+        "sublevel": "117"
+      },
+      {
+        "tag": "android12-5.10-2022-09_r1",
+        "sublevel": "117"
+      },
+      {
+        "tag": "android12-5.10-2022-08_r8",
+        "sublevel": "117"
+      },
+      {
+        "tag": "android12-5.10-2022-08_r7",
+        "sublevel": "117"
+      },
+      {
+        "tag": "android12-5.10-2022-08_r6",
+        "sublevel": "117"
+      },
+      {
+        "tag": "android12-5.10-2022-08_r5",
+        "sublevel": "117"
+      },
+      {
+        "tag": "android12-5.10-2022-08_r4",
+        "sublevel": "117"
+      },
+      {
+        "tag": "android12-5.10-2022-08_r3",
+        "sublevel": "117"
+      },
+      {
+        "tag": "android12-5.10-2022-08_r2",
+        "sublevel": "117"
+      },
+      {
+        "tag": "android12-5.10-2022-08_r1",
+        "sublevel": "117"
+      },
+      {
+        "tag": "android12-5.10-2022-07_r12",
+        "sublevel": "110"
+      },
+      {
+        "tag": "android12-5.10-2022-07_r11",
+        "sublevel": "110"
+      },
+      {
+        "tag": "android12-5.10-2022-07_r10",
+        "sublevel": "110"
+      },
+      {
+        "tag": "android12-5.10-2022-07_r9",
+        "sublevel": "110"
+      },
+      {
+        "tag": "android12-5.10-2022-07_r8",
+        "sublevel": "110"
+      },
+      {
+        "tag": "android12-5.10-2022-07_r7",
+        "sublevel": "110"
+      },
+      {
+        "tag": "android12-5.10-2022-07_r6",
+        "sublevel": "110"
+      },
+      {
+        "tag": "android12-5.10-2022-07_r5",
+        "sublevel": "110"
+      },
+      {
+        "tag": "android12-5.10-2022-07_r4",
+        "sublevel": "110"
+      },
+      {
+        "tag": "android12-5.10-2022-07_r3",
+        "sublevel": "110"
+      },
+      {
+        "tag": "android12-5.10-2022-07_r2",
+        "sublevel": "110"
+      },
+      {
+        "tag": "android12-5.10-2022-07_r1",
+        "sublevel": "110"
+      },
+      {
+        "tag": "android12-5.10-2022-06_r7",
+        "sublevel": "110"
+      },
+      {
+        "tag": "android12-5.10-2022-06_r6",
+        "sublevel": "110"
+      },
+      {
+        "tag": "android12-5.10-2022-06_r5",
+        "sublevel": "110"
+      },
+      {
+        "tag": "android12-5.10-2022-06_r4",
+        "sublevel": "110"
+      },
+      {
+        "tag": "android12-5.10-2022-06_r3",
+        "sublevel": "110"
+      },
+      {
+        "tag": "android12-5.10-2022-06_r2",
+        "sublevel": "110"
+      },
+      {
+        "tag": "android12-5.10-2022-06_r1",
+        "sublevel": "110"
+      },
+      {
+        "tag": "android12-5.10-2022-05_r12",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-05_r11",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-05_r10",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-05_r9",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-05_r8",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-05_r7",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-05_r6",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-05_r5",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-05_r4",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-05_r3",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-05_r2",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-05_r1",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-04_r20",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-04_r19",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-04_r18",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-04_r17",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-04_r16",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-04_r15",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-04_r14",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-04_r13",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-04_r12",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-04_r11",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-04_r10",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-04_r9",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-04_r8",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-04_r7",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-04_r6",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-04_r5",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-04_r4",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-04_r3",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-04_r2",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-04_r1",
+        "sublevel": "101"
+      },
+      {
+        "tag": "android12-5.10-2022-03_r11",
+        "sublevel": "81"
+      },
+      {
+        "tag": "android12-5.10-2022-03_r10",
+        "sublevel": "81"
+      },
+      {
+        "tag": "android12-5.10-2022-03_r9",
+        "sublevel": "81"
+      },
+      {
+        "tag": "android12-5.10-2022-03_r8",
+        "sublevel": "81"
+      },
+      {
+        "tag": "android12-5.10-2022-03_r7",
+        "sublevel": "81"
+      },
+      {
+        "tag": "android12-5.10-2022-03_r6",
+        "sublevel": "81"
+      },
+      {
+        "tag": "android12-5.10-2022-03_r5",
+        "sublevel": "81"
+      },
+      {
+        "tag": "android12-5.10-2022-03_r4",
+        "sublevel": "81"
+      },
+      {
+        "tag": "android12-5.10-2022-03_r3",
+        "sublevel": "81"
+      },
+      {
+        "tag": "android12-5.10-2022-03_r2",
+        "sublevel": "81"
+      },
+      {
+        "tag": "android12-5.10-2022-03_r1",
+        "sublevel": "81"
+      },
+      {
+        "tag": "android12-5.10-2022-02_r9",
+        "sublevel": "81"
+      },
+      {
+        "tag": "android12-5.10-2022-02_r8",
+        "sublevel": "81"
+      },
+      {
+        "tag": "android12-5.10-2022-02_r7",
+        "sublevel": "81"
+      },
+      {
+        "tag": "android12-5.10-2022-02_r6",
+        "sublevel": "81"
+      },
+      {
+        "tag": "android12-5.10-2022-02_r5",
+        "sublevel": "81"
+      },
+      {
+        "tag": "android12-5.10-2022-02_r4",
+        "sublevel": "81"
+      },
+      {
+        "tag": "android12-5.10-2022-02_r3",
+        "sublevel": "81"
+      },
+      {
+        "tag": "android12-5.10-2022-02_r2",
+        "sublevel": "81"
+      },
+      {
+        "tag": "android12-5.10-2022-02_r1",
+        "sublevel": "81"
+      },
+      {
+        "tag": "android12-5.10-2022-01_r11",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2022-01_r10",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2022-01_r9",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2022-01_r8",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2022-01_r7",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2022-01_r6",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2022-01_r5",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2022-01_r4",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2022-01_r3",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2022-01_r2",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2022-01_r1",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-12_r14",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-12_r13",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-12_r12",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-12_r11",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-12_r10",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-12_r9",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-12_r8",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-12_r7",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-12_r6",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-12_r5",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-12_r4",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-12_r3",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-12_r2",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-12_r1",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-11_r20",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-11_r19",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-11_r18",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-11_r17",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-11_r16",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-11_r15",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-11_r14",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-11_r13",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-11_r12",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-11_r11",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-11_r10",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-11_r9",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-11_r8",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-11_r7",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-11_r6",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-11_r5",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-11_r4",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-11_r3",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-11_r2",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-11_r1",
+        "sublevel": "66"
+      },
+      {
+        "tag": "android12-5.10-2021-10_r7",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-10_r6",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-10_r5",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-10_r4",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-10_r3",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-10_r2",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-10_r1",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-09_r10",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-09_r9",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-09_r8",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-09_r7",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-09_r6",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-09_r5",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-09_r4",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-09_r3",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-09_r2",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-09_r1",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-08_r7",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-08_r6",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-08_r5",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-08_r4",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-08_r3",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-08_r2",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-08_r1",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-07_r12",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-07_r11",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-07_r10",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-07_r9",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-07_r8",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-07_r7",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-07_r6",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-07_r5",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-07_r4",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-07_r3",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-07_r2",
+        "sublevel": "43"
+      },
+      {
+        "tag": "android12-5.10-2021-07_r1",
+        "sublevel": "43"
+      }
+    ]
+  }
+}
