@@ -97,7 +97,7 @@ jobs:
       time: ${{ steps.set-time.outputs.time }}
     steps:
       - name: 检出代码读取配置
-        uses: actions/checkout@v6
+        uses: actions/checkout@v66
         
       - name: 解析构建时间
         id: set-time

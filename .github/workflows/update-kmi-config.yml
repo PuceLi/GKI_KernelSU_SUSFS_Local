@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 检出当前仓库代码
-        uses: actions/checkout@v6
+        uses: actions/checkout@v66
 
       - name: 增量抓取 KMI 版本 (终极分层聚合与美化版)
         run: |
