@@ -1,4 +1,4 @@
-name: 自动更新全量 KMI 历史版本库
+name: 自动更新全量 KMI 版本库
 
 permissions:
   contents: write
