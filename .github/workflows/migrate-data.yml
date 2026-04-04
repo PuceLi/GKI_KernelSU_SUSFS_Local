@@ -1,0 +1,87 @@
+name: 数据迁移 - KMI 数据库模块化重构
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch: # 这是一个一次性工具，只能手动触发
+
+jobs:
+  migrate-json:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出当前仓库代码
+        uses: actions/checkout@v4
+
+      - name: 执行本地数据清洗与模块化切割
+        run: |
+          JSON_FILE="config/kmi_versions.json"
+          
+          if [ ! -f "$JSON_FILE" ]; then
+            echo "❌ 未找到原始数据 $JSON_FILE！"
+            exit 1
+          fi
+
+          echo "📦 开始解析原始全量数据库..."
+          
+          # 获取 JSON 中所有的一级键名 (如 android12-5.10, android14-6.1)
+          BRANCHES=$(jq -r 'keys[]' "$JSON_FILE")
+
+          for BRANCH in $BRANCHES; do
+            # 提取 5.10, 6.1 等作为目标文件名
+            K_VER=$(echo "$BRANCH" | awk -F'-' '{print $2}')
+            TARGET_FILE="config/${K_VER}.json"
+
+            # 如果目标文件不存在，初始化为一个空 JSON 对象
+            if [ ! -f "$TARGET_FILE" ]; then
+              echo "{}" > "$TARGET_FILE"
+            fi
+
+            echo "✂️ 正在切割: $BRANCH -> 归档至 $TARGET_FILE"
+
+            # 提取当前分支的全量数组到一个临时文件
+            jq ".\"$BRANCH\"" "$JSON_FILE" > tmp_array.json
+
+            # 【核心切割逻辑】:
+            # 1. 拿数组最后 4 个元素作为 latest，并倒序
+            # 2. 拿排除最后 4 个的所有元素作为 obsolete，并倒序
+            # 3. 将这两个新数组塞入目标 JSON 文件的对应键值下
+            jq --slurpfile arr tmp_array.json \
+              '. + {
+                "'"$BRANCH"'": {
+                  "latest": ($arr[0] | .[-4:] | reverse),
+                  "obsolete": ($arr[0] | .[:-4] | reverse)
+                }
+              }' "$TARGET_FILE" > tmp_out.json
+            
+            mv tmp_out.json "$TARGET_FILE"
+          done
+
+          # 清理临时文件
+          rm -f tmp_array.json
+          
+          echo "✅ 所有数据切割完成！新生成的文件结构如下："
+          cat config/6.1.json | jq . | head -n 20
+          echo "..."
+
+      - name: 提交重构后的文件并清理旧文件
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          if [ -n "$(git status --porcelain config/)" ]; then
+            # 添加新生成的 5.10.json, 6.1.json 等文件
+            git add config/*.json
+            
+            # 删除旧的臃肿大文件
+            git rm config/kmi_versions.json
+            
+            git commit -m "chore: KMI 数据库迁移 (按版本分离，切分 latest 与 obsolete)"
+            
+            git pull --rebase origin ${{ github.ref_name }}
+            git push origin ${{ github.ref_name }}
+            
+            echo "🎉 数据迁移大功告成！"
+          else
+            echo "数据未发生任何变化。"
+          fi
