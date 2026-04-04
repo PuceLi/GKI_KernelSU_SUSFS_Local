@@ -1,87 +1,88 @@
-name: 数据迁移 - KMI 数据库模块化重构
+name: 数据迁移 - 建立分层聚合数据库
 
 permissions:
   contents: write
 
 on:
-  workflow_dispatch: # 这是一个一次性工具，只能手动触发
+  workflow_dispatch: # 手动触发一次性迁移
 
 jobs:
-  migrate-json:
+  migrate:
     runs-on: ubuntu-latest
     steps:
       - name: 检出当前仓库代码
         uses: actions/checkout@v4
 
-      - name: 执行本地数据清洗与模块化切割
+      - name: 执行本地分层归档逻辑
         run: |
-          JSON_FILE="config/kmi_versions.json"
+          SOURCE_JSON="config/kmi_versions.json"
           
-          if [ ! -f "$JSON_FILE" ]; then
-            echo "❌ 未找到原始数据 $JSON_FILE！"
+          if [ ! -f "$SOURCE_JSON" ]; then
+            echo "❌ 错误: 未找到源文件 $SOURCE_JSON"
             exit 1
           fi
 
-          echo "📦 开始解析原始全量数据库..."
-          
-          # 获取 JSON 中所有的一级键名 (如 android12-5.10, android14-6.1)
-          BRANCHES=$(jq -r 'keys[]' "$JSON_FILE")
+          echo "📦 开始从旧数据库提取数据并重构..."
+
+          # 获取所有分支名 (如 android14-6.1)
+          BRANCHES=$(jq -r 'keys[]' "$SOURCE_JSON")
 
           for BRANCH in $BRANCHES; do
-            # 提取 5.10, 6.1 等作为目标文件名
+            # 自动提取路径信息
+            # BRANCH: android14-6.1 -> A_VER: android14, K_VER: 6.1
+            A_VER=$(echo "$BRANCH" | awk -F'-' '{print $1}')
             K_VER=$(echo "$BRANCH" | awk -F'-' '{print $2}')
-            TARGET_FILE="config/${K_VER}.json"
-
-            # 如果目标文件不存在，初始化为一个空 JSON 对象
-            if [ ! -f "$TARGET_FILE" ]; then
-              echo "{}" > "$TARGET_FILE"
-            fi
-
-            echo "✂️ 正在切割: $BRANCH -> 归档至 $TARGET_FILE"
-
-            # 提取当前分支的全量数组到一个临时文件
-            jq ".\"$BRANCH\"" "$JSON_FILE" > tmp_array.json
-
-            # 【核心切割逻辑】:
-            # 1. 拿数组最后 4 个元素作为 latest，并倒序
-            # 2. 拿排除最后 4 个的所有元素作为 obsolete，并倒序
-            # 3. 将这两个新数组塞入目标 JSON 文件的对应键值下
-            jq --slurpfile arr tmp_array.json \
-              '. + {
-                "'"$BRANCH"'": {
-                  "latest": ($arr[0] | .[-4:] | reverse),
-                  "obsolete": ($arr[0] | .[:-4] | reverse)
-                }
-              }' "$TARGET_FILE" > tmp_out.json
             
-            mv tmp_out.json "$TARGET_FILE"
+            TARGET_DIR="data/${A_VER}"
+            mkdir -p "$TARGET_DIR"
+            TARGET_FILE="${TARGET_DIR}/${K_VER}.json"
+
+            echo "✂️ 正在处理: $BRANCH -> 归档至 $TARGET_FILE"
+
+            # 【核心聚合魔法】：
+            # 1. 过滤掉 unknown 记录
+            # 2. 按照 sublevel 数字大小进行分组
+            # 3. 将同一 sublevel 的多个 Tag 聚合到 tags 数组中，并按修订版 (r1, r2) 倒序排列
+            # 4. 将所有分组按小版本号从大到小排列
+            # 5. 取前 4 个分组放入 latest，其余放入 obsolete
+            jq -c "
+              .\"$BRANCH\" | 
+              map(select(.sublevel != \"unknown\")) | 
+              group_by(.sublevel | tonumber) | 
+              reverse | 
+              map({
+                sublevel: .[0].sublevel,
+                tags: map(.tag) | sort | reverse
+              }) | 
+              {
+                latest: .[:4],
+                obsolete: .[4:]
+              }
+            " "$SOURCE_JSON" > "$TARGET_FILE"
+
           done
 
-          # 清理临时文件
-          rm -f tmp_array.json
-          
-          echo "✅ 所有数据切割完成！新生成的文件结构如下："
-          cat config/6.1.json | jq . | head -n 20
-          echo "..."
+          echo "✅ 迁移完成！新生成的目录结构如下："
+          ls -R data/
 
-      - name: 提交重构后的文件并清理旧文件
+      - name: 提交并推送至 data 目录
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          if [ -n "$(git status --porcelain config/)" ]; then
-            # 添加新生成的 5.10.json, 6.1.json 等文件
-            git add config/*.json
+          # 检查是否有新文件生成
+          if [ -d "data" ]; then
+            git add data/
             
-            # 删除旧的臃肿大文件
-            git rm config/kmi_versions.json
+            # 你可以决定是否在此处删除旧文件，或者手动删除
+            # git rm config/kmi_versions.json
             
-            git commit -m "chore: KMI 数据库迁移 (按版本分离，切分 latest 与 obsolete)"
+            git commit -m "chore: 数据库架构升级 (分层目录 + 小版本聚合)"
             
+            # 使用变基推送防止冲突
             git pull --rebase origin ${{ github.ref_name }}
             git push origin ${{ github.ref_name }}
-            
-            echo "🎉 数据迁移大功告成！"
+            echo "🎉 数据已成功重构并存入 data 目录！"
           else
-            echo "数据未发生任何变化。"
+            echo "没有产生任何数据变动。"
           fi
