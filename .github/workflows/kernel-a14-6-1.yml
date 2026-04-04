@@ -97,7 +97,7 @@ jobs:
       time: ${{ steps.set-time.outputs.time }}
     steps:
       - name: 检出代码读取配置
-        uses: actions/checkout@v66
+        uses: actions/checkout@v6
         
       - name: 解析构建时间
         id: set-time
@@ -109,10 +109,11 @@ jobs:
             echo "time=$B_TIME" >> $GITHUB_OUTPUT
           fi
           
-      - name: 从 JSON 自动生成最近的 4 个 KMI 版本 + LTS
+      - name: 从 JSON 自动提取最新 4 个 6.1 版本 + LTS
         id: set-matrix
         run: |
-          JSON_FILE="config/kmi_versions.json"
+          # 💯 指向最新的专属配置文件
+          JSON_FILE="config/android14/6.1.json"
           
           # 检查 JSON 文件是否存在
           if [ ! -f "$JSON_FILE" ]; then
@@ -120,28 +121,21 @@ jobs:
             exit 1
           fi
           
-          # 使用 jq 提取 android14-6.1 分支下的所有记录
-          # 倒序取前 4 个（因为最后面的是最新的），并转换为我们需要的 JSON 格式
-          # 注意：为了避免遇到 unknown 的 sublevel 导致编译混淆，我们过滤掉 sublevel 为 unknown 的项
+          # ⚡ 极速提取：直接读取 latest 数组，并获取 tags 里的第一个（最新修订版）
           MATRIX_JSON=$(jq -c '
-            ."android14-6.1" 
-            | map(select(.sublevel != "unknown")) 
-            | reverse 
-            | .[0:4] 
-            | map({
+            .latest | map({
                 sub_level: .sublevel, 
-                os_patch_level: (.tag | capture("android14-6.1-(?<patch>[0-9]{4}-[0-9]{2}(?:_r[0-9]+)?)").patch)
+                os_patch_level: (.tags[0] | capture("android[0-9]+-[0-9]+\\.[0-9]+-(?<patch>[0-9]{4}-[0-9]{2}(?:_r[0-9]+)?)").patch)
               })
           ' "$JSON_FILE")
           
           # 验证提取是否成功
-          if [ "$MATRIX_JSON" = "null" ] || [ -z "$MATRIX_JSON" ]; then
-             echo "❌ 错误: 从 JSON 提取版本信息失败！可能 JSON 格式有误或没有足够数据。"
+          if [ "$MATRIX_JSON" = "null" ] || [ -z "$MATRIX_JSON" ] || [ "$MATRIX_JSON" = "[]" ]; then
+             echo "❌ 错误: 从 JSON 提取版本信息失败！"
              exit 1
           fi
           
-          # 手动将你的 LTS 选项拼接到自动生成的矩阵数组后面
-          # jq '. + [{"sub_level": "X", "os_patch_level": "lts"}]' <<< "$MATRIX_JSON"
+          # 手动将 LTS 选项拼接到自动生成的矩阵数组后面
           FINAL_MATRIX=$(echo "$MATRIX_JSON" | jq -c '. + [{"sub_level": "X", "os_patch_level": "lts"}]')
           
           echo "生成的最终构建矩阵："
