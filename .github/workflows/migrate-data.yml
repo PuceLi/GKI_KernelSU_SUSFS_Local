@@ -13,76 +13,76 @@ jobs:
       - name: 检出当前仓库代码
         uses: actions/checkout@v4
 
-      - name: 执行本地分层归档逻辑
+      - name: 执行本地分层归档与深度聚合
         run: |
-          SOURCE_JSON="config/kmi_versions.json"
-          
-          if [ ! -f "$SOURCE_JSON" ]; then
-            echo "❌ 错误: 未找到源文件 $SOURCE_JSON"
-            exit 1
-          fi
+          mkdir -p data
+          echo "📦 开始读取现有的分散 JSON 文件并重构..."
 
-          echo "📦 开始从旧数据库提取数据并重构..."
-
-          # 获取所有分支名 (如 android14-6.1)
-          BRANCHES=$(jq -r 'keys[]' "$SOURCE_JSON")
-
-          for BRANCH in $BRANCHES; do
-            # 自动提取路径信息
-            # BRANCH: android14-6.1 -> A_VER: android14, K_VER: 6.1
-            A_VER=$(echo "$BRANCH" | awk -F'-' '{print $1}')
-            K_VER=$(echo "$BRANCH" | awk -F'-' '{print $2}')
+          # 遍历目前 config 目录下所有的 .json 文件 (比如 5.10.json, 6.1.json)
+          for FILE in config/*.json; do
+            # 排除可能误匹配到的空结果
+            if [ ! -f "$FILE" ]; then continue; fi
             
-            TARGET_DIR="data/${A_VER}"
-            mkdir -p "$TARGET_DIR"
-            TARGET_FILE="${TARGET_DIR}/${K_VER}.json"
-
-            echo "✂️ 正在处理: $BRANCH -> 归档至 $TARGET_FILE"
-
-            # 【核心聚合魔法】：
-            # 1. 过滤掉 unknown 记录
-            # 2. 按照 sublevel 数字大小进行分组
-            # 3. 将同一 sublevel 的多个 Tag 聚合到 tags 数组中，并按修订版 (r1, r2) 倒序排列
-            # 4. 将所有分组按小版本号从大到小排列
-            # 5. 取前 4 个分组放入 latest，其余放入 obsolete
-            jq -c "
-              .\"$BRANCH\" | 
-              map(select(.sublevel != \"unknown\")) | 
-              group_by(.sublevel | tonumber) | 
-              reverse | 
-              map({
-                sublevel: .[0].sublevel,
-                tags: map(.tag) | sort | reverse
-              }) | 
-              {
-                latest: .[:4],
-                obsolete: .[4:]
-              }
-            " "$SOURCE_JSON" > "$TARGET_FILE"
-
+            echo "================================================"
+            echo "📥 正在解析: $FILE"
+            
+            # 获取这个文件里的顶层分支名 (比如 android14-6.1)
+            BRANCHES=$(jq -r 'keys[]' "$FILE")
+            
+            for BRANCH in $BRANCHES; do
+              # 提取安卓版本和内核版本
+              A_VER=$(echo "$BRANCH" | awk -F'-' '{print $1}')
+              K_VER=$(echo "$BRANCH" | awk -F'-' '{print $2}')
+              
+              TARGET_DIR="data/${A_VER}"
+              mkdir -p "$TARGET_DIR"
+              TARGET_FILE="${TARGET_DIR}/${K_VER}.json"
+              
+              echo "✂️ 正在聚合: $BRANCH -> 归档至 $TARGET_FILE"
+              
+              # 【核心黑魔法】：
+              # 1. 把之前的 latest 和 obsolete 重新合并成一个大数组
+              # 2. 过滤掉 unknown
+              # 3. 按小版本号 (sublevel) 分组并倒序
+              # 4. 把同组的 Tag 合并成数组，取前 4 组作为 latest
+              jq -c "
+                .\"$BRANCH\" | (.latest + .obsolete) | 
+                map(select(.sublevel != \"unknown\")) | 
+                group_by(.sublevel | tonumber) | 
+                reverse | 
+                map({
+                  sublevel: .[0].sublevel,
+                  tags: map(.tag) | sort | reverse
+                }) | 
+                {
+                  latest: .[:4],
+                  obsolete: .[4:]
+                }
+              " "$FILE" > "$TARGET_FILE"
+            done
           done
 
           echo "✅ 迁移完成！新生成的目录结构如下："
           ls -R data/
 
-      - name: 提交并推送至 data 目录
+      - name: 提交推送到 data 目录并清理旧 config
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # 检查是否有新文件生成
           if [ -d "data" ]; then
             git add data/
             
-            # 你可以决定是否在此处删除旧文件，或者手动删除
-            # git rm config/kmi_versions.json
+            # 既然已经迁移到 data 目录，就把 config 下这些临时过渡的 json 删掉
+            # (注意：保留 kmi_latest.env 不删)
+            git rm config/*.json 2>/dev/null || true
             
-            git commit -m "chore: 数据库架构升级 (分层目录 + 小版本聚合)"
+            git commit -m "chore: 终极架构迁移 (按安卓版本分目录，深度聚合小版本号)"
             
-            # 使用变基推送防止冲突
             git pull --rebase origin ${{ github.ref_name }}
             git push origin ${{ github.ref_name }}
-            echo "🎉 数据已成功重构并存入 data 目录！"
+            
+            echo "🎉 数据已完美蜕变并存入 data 目录！"
           else
             echo "没有产生任何数据变动。"
           fi
