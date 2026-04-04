@@ -21,23 +21,12 @@ jobs:
       - name: 检出当前仓库代码
         uses: actions/checkout@v4
 
-      - name: 增量抓取 KMI 版本 (极速防限流版)
+      - name: 增量抓取 KMI 版本 (终极分层聚合与美化版)
         run: |
           mkdir -p config
-          JSON_FILE="config/kmi_versions.json"
           ENV_FILE="config/kmi_latest.env"
           FORCE_REFRESH="${{ github.event.inputs.force_refresh }}"
           
-          # 1. 尝试读取现有的 JSON 数据库
-          if [ -f "$JSON_FILE" ] && [ "$FORCE_REFRESH" != "true" ]; then
-            echo "📥 加载现有数据库进行增量更新..."
-            OLD_JSON=$(cat "$JSON_FILE")
-          else
-            echo "♻️ 强制全量模式或无旧配置，将重新抓取所有版本..."
-            OLD_JSON="{}"
-          fi
-
-          echo "{" > "$JSON_FILE.new"
           echo "# 自动生成的最新 KMI 快捷配置" > "$ENV_FILE"
           
           BRANCHES=("android12-5.10" "android13-5.15" "android14-5.15" "android14-6.1" "android15-6.6" "android16-6.12")
@@ -48,22 +37,42 @@ jobs:
           
           for i in "${!BRANCHES[@]}"; do
             BRANCH="${BRANCHES[$i]}"
+            
+            # 【核心逻辑1】：智能提取安卓版本和内核版本作为路径
+            A_VER=$(echo "$BRANCH" | awk -F'-' '{print $1}')
+            K_VER=$(echo "$BRANCH" | awk -F'-' '{print $2}')
+            
+            TARGET_DIR="config/${A_VER}"
+            mkdir -p "$TARGET_DIR"
+            JSON_FILE="${TARGET_DIR}/${K_VER}.json"
+            
+            # 读取现有的新版分层 JSON 数据库
+            if [ -f "$JSON_FILE" ] && [ "$FORCE_REFRESH" != "true" ]; then
+              echo "📥 加载现有数据库进行增量更新: $JSON_FILE"
+              OLD_JSON=$(cat "$JSON_FILE")
+            else
+              echo "♻️ 强制全量模式或无旧配置，将重新抓取: $BRANCH"
+              OLD_JSON="{}"
+            fi
+
             echo "================================================"
-            echo "🔍 正在分析分支: $BRANCH"
+            echo "🔍 正在分析分支: $BRANCH -> 归档至 $JSON_FILE"
             
             # 筛选该分支的 Tags
             BRANCH_TAGS=$(echo "$ALL_TAGS" | grep "^${BRANCH}-" | sort -V)
-            echo "  \"${BRANCH}\": [" >> "$JSON_FILE.new"
             
             if [ -n "$BRANCH_TAGS" ]; then
               TAG_ARRAY=($BRANCH_TAGS)
               TAG_COUNT=${#TAG_ARRAY[@]}
               
+              # 准备一个临时数组存取所有抓到的 Tag 和 Sublevel
+              TEMP_ARRAY="["
+              
               for j in "${!TAG_ARRAY[@]}"; do
                 TAG="${TAG_ARRAY[$j]}"
                 
-                # 检查旧 JSON 里是否已经有这个 Tag 的有效小版本号 (排除 unknown)
-                EXISTING_SUB=$(echo "$OLD_JSON" | jq -r ".[\"${BRANCH}\"][] | select(.tag == \"${TAG}\") | .sublevel" 2>/dev/null | grep -v "unknown" | head -n 1 || echo "")
+                # 【核心逻辑2】：从最新的 nested 结构中查找旧记录
+                EXISTING_SUB=$(echo "$OLD_JSON" | jq -r 'if .latest then (.latest + .obsolete)[] | .sublevel as $sub | .tags[] | select(. == "'$TAG'") | $sub else empty end' 2>/dev/null | grep -v "unknown" | head -n 1 || echo "")
                 
                 if [ -n "$EXISTING_SUB" ]; then
                   SUBLEVEL="$EXISTING_SUB"
@@ -92,9 +101,9 @@ jobs:
                   [ -z "$SUBLEVEL" ] && SUBLEVEL="unknown"
                 fi
                 
-                # 写入 JSON 数据
+                # 追加到临时字符串
                 COMMA=$([ $((j+1)) -lt $TAG_COUNT ] && echo "," || echo "")
-                echo "    { \"tag\": \"$TAG\", \"sublevel\": \"$SUBLEVEL\" }$COMMA" >> "$JSON_FILE.new"
+                TEMP_ARRAY="${TEMP_ARRAY} { \"tag\": \"$TAG\", \"sublevel\": \"$SUBLEVEL\" }${COMMA}"
                 
                 # 如果是该分支的最后一个（最新的）Tag，写入 Env 快捷文件
                 if [ $((j+1)) -eq $TAG_COUNT ]; then
@@ -103,27 +112,41 @@ jobs:
                   echo "${VAR_PREFIX}_SUBLEVEL=${SUBLEVEL}" >> "$ENV_FILE"
                 fi
               done
+              
+              TEMP_ARRAY="${TEMP_ARRAY} ]"
+              
+              # 【核心逻辑3】：深度聚合 + 保持漂亮排版
+              # 过滤 unknown -> 按数字分组 -> 聚合 tags 并倒序 -> 取前4为 latest
+              jq -n "
+                ($TEMP_ARRAY | map(select(.sublevel != \"unknown\"))) as \$valid_items |
+                \$valid_items | group_by(.sublevel | tonumber? // 0) | reverse |
+                map({
+                  sublevel: .[0].sublevel | tostring,
+                  tags: map(.tag) | sort | reverse
+                }) |
+                {
+                  latest: .[:4],
+                  obsolete: .[4:]
+                }
+              " > "$JSON_FILE.new"
+              
+              mv "$JSON_FILE.new" "$JSON_FILE"
             else
               echo "⚠️ 未找到 $BRANCH 的任何历史 Tag"
             fi
-            
-            # 闭合 JSON 数组
-            FOOTER=$([ $((i+1)) -lt $TOTAL_BRANCHES ] && echo "  ]," || echo "  ]")
-            echo "$FOOTER" >> "$JSON_FILE.new"
           done
           
-          echo "}" >> "$JSON_FILE.new"
-          mv "$JSON_FILE.new" "$JSON_FILE"
-          echo "✅ 增量同步完成！"
+          echo "✅ 增量同步与聚合格式化完成！"
 
       - name: 提交并推送生成的配置
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
+          # 检查 config 目录是否有变化
           if [ -n "$(git status --porcelain config/)" ]; then
-            git add config/kmi_latest.env config/kmi_versions.json
-            git commit -m "chore: 增量更新 KMI 历史版本库"
+            git add config/
+            git commit -m "chore: 增量更新 KMI 数据库 (分层聚合版)"
             
             # 在推送前先拉取远端更新并变基，防止 ! [rejected] 错误
             git pull --rebase origin ${{ github.ref_name }}
