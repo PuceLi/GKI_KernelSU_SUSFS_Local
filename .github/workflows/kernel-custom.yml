@@ -77,7 +77,6 @@ on:
         description: "自定义构建时间 (可选，N或留空=当前UTC)"
         required: false
         type: string
-        default: "Sun Dec 01 08:10:00 UTC 2024"
 
       # ==================== 功能开关 ====================
       use_zram:
