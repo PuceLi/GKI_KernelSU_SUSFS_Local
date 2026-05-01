@@ -873,6 +873,76 @@ jobs:
           CONFIG_KSU_SUSFS_SUS_MAP=y
           EOF
 
+      - name: 注入DroidSpaces参数
+        run: |
+          cd "$KERNEL_ROOT"
+          cd ./common
+          wget https://github.com/ravindu644/Droidspaces-OSS/blob/main/Documentation/resources/kernel-patches/GKI/below-kernel-6.12/001.GKI-below-6.12-fix_sysvipc_kabi_6_7_8.patch
+          patch -p1 < 001.GKI-below-6.12-fix_sysvipc_kabi_6_7_8.patch
+          cd ../
+          echo "CONFIG_SYSCTL=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SYSVIPC=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_POSIX_MQUEUE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_NAMESPACES=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_PID_NS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_IPC_NS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_UTS_NS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_USER_NS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DEVTMPFS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DEVTMPFS_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+
+          # ==========支持Docker==========
+          # 核心 Netfilter 基础
+          CONFIG_NETFILTER=y
+          CONFIG_NETFILTER_ADVANCED=y
+          
+          # IPv4 网络过滤
+          CONFIG_IP_NF_FILTER=y
+          CONFIG_IP_NF_NAT=y
+          CONFIG_IP_NF_TARGET_MASQUERADE=y
+          
+          # 网络地址类型匹配（你缺失的 addrtype）
+          CONFIG_NF_TABLES=y
+          CONFIG_NF_TABLES_IPV4=y
+          CONFIG_NF_TABLES_IPV6=y
+          CONFIG_NF_FLOW_TABLE_INET=Y
+          
+          # iptables 兼容层
+          CONFIG_IPTABLES=y
+          CONFIG_IP6TABLES=y
+          CONFIG_NF_TABLES_BRIDGE=y
+          
+          # 网桥支持（Docker 默认网桥必须）
+          CONFIG_BRIDGE=y
+          CONFIG_BRIDGE_NETFILTER=y
+
+          # ============================
+          # 用户命名空间（容器必备）
+          CONFIG_USER_NS=y
+          
+          # PID 命名空间
+          CONFIG_PID_NS=y
+          
+          # 挂载、网络、IPC 命名空间
+          CONFIG_NET_NS=y
+          CONFIG_MNT_NS=y
+          CONFIG_IPC_NS=y
+          
+          # Proc 文件系统完整支持
+          CONFIG_PROC_FS=y
+          CONFIG_PROC_SYSCTL=y
+          
+          # 允许 setgroups 权限下放
+          CONFIG_ALLOW_SETGROUPS=y
+
+          # ===========================
+          CONFIG_CGROUP_PIDS=y
+          CONFIG_CGROUP_NET_CLASSID=y
+          CONFIG_CGROUP_DEVICE=y
+          CONFIG_CPU_CGROUP=y
+          CONFIG_MEMCG=y
+          CONFIG_NAMESPACES=y
+
       - name: 配置内核名称
         working-directory: ${{ env.KERNEL_ROOT }}
         run: |
