@@ -989,10 +989,11 @@ jobs:
           esac
 
           echo "自动选择 NTSync 补丁: ${NTSYNC_PATCH}.patch"
-          wget -q "https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/refs/heads/main/NTsync/ntsync_base.patch"
+          if [ "${{ inputs.kernel_version }}" != "6.12" ]; then
+            wget -q "https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/refs/heads/main/NTsync/ntsync_base.patch"
+            patch -p1 < "ntsync_base.patch"
+          fi
           wget -q "https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/refs/heads/main/NTsync/${NTSYNC_PATCH}.patch"
-
-          patch -p1 < "ntsync_base.patch"
           patch -p1 < "${NTSYNC_PATCH}.patch"
 
           cd ..
