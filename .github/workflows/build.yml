@@ -844,9 +844,9 @@ jobs:
           echo "应用 Droidspaces SYSVIPC kABI 修复补丁 (槽位: $SLOT / $SLOT_NAME)..."
           case "$KERNEL_VER" in
             6.12)
-              echo "下载 WildKernels 针对 6.12 的 Droidspaces 兼容性补丁..."
-              wget -q -O /tmp/fix_sysvipc_kabi_a16-6.12.patch "https://raw.githubusercontent.com/WildKernels/kernel_patches/main/common/droidspaces/fix_sysvipc_kabi_a16-6.12.patch"
-              PATCH_FILE="/tmp/fix_sysvipc_kabi_a16-6.12.patch"
+              echo "下载 Goldzxcbug 针对 6.12 的 GKI 兼容性补丁..."
+              wget -q -O /tmp/Kernel_6.12.patch "https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/main/GKI/6.12/Kernel_6.12.patch"
+              PATCH_FILE="/tmp/Kernel_6.12.patch"
               ;;
             5.10|5.15|6.1|6.6)
               PATCH_FILE="$DROIDSPACES_PATCHES/below-kernel-6.12/001.GKI-below-6.12-fix_sysvipc_kabi_${SLOT_NAME}.patch"
@@ -990,10 +990,10 @@ jobs:
 
           echo "自动选择 NTSync 补丁: ${NTSYNC_PATCH}.patch"
           if [ "${{ inputs.kernel_version }}" != "6.12" ]; then
-            wget -q "https://raw.githubusercontent.com/WildKernels/kernel_patches/main/common/ntsync/ntsync_base.patch"
+            wget -q "https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/main/NTsync/ntsync_base.patch"
             patch -p1 < "ntsync_base.patch"
           fi
-          wget -q "https://raw.githubusercontent.com/WildKernels/kernel_patches/main/common/ntsync/${NTSYNC_PATCH}.patch"
+          wget -q "https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/main/NTsync/${NTSYNC_PATCH}.patch"
           patch -p1 < "${NTSYNC_PATCH}.patch"
 
           cd ..
