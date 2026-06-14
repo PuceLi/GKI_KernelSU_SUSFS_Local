@@ -992,9 +992,12 @@ jobs:
           if [ "${{ inputs.kernel_version }}" != "6.12" ]; then
             wget -q "https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/main/NTsync/ntsync_base.patch"
             patch -p1 < "ntsync_base.patch"
+            wget -q "https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/main/NTsync/${NTSYNC_PATCH}.patch"
+            patch -p1 < "${NTSYNC_PATCH}.patch"
+          else
+            echo "6.12 内核已包含 NTSync 框架，正在通过 sed 移除 drivers/misc/Kconfig 中的 depends on BROKEN 限制..."
+            sed -i '/config NTSYNC/,/config / { /depends on BROKEN/d }' drivers/misc/Kconfig
           fi
-          wget -q "https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/main/NTsync/${NTSYNC_PATCH}.patch"
-          patch -p1 < "${NTSYNC_PATCH}.patch"
 
           cd ..
 
