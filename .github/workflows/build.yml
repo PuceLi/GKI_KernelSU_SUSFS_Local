@@ -1043,14 +1043,22 @@ jobs:
           cp -r $SUKISU_PATCHES/other/zram/lz4k/crypto/* ./crypto/
           cp -r $SUKISU_PATCHES/other/zram/lz4k_oplus ./lib/
 
-          cp $SUKISU_PATCHES/other/zram/zram_patch/${{ inputs.kernel_version }}/lz4kd.patch ./
-          if ! patch -p1 -F 3 < lz4kd.patch; then
-            echo "::warning::lz4kd.patch 应用失败，可能已应用或上下文不匹配"
+          if [ -f "$SUKISU_PATCHES/other/zram/zram_patch/${{ inputs.kernel_version }}/lz4kd.patch" ]; then
+            cp "$SUKISU_PATCHES/other/zram/zram_patch/${{ inputs.kernel_version }}/lz4kd.patch" ./
+            if ! patch -p1 -F 3 < lz4kd.patch; then
+              echo "::warning::lz4kd.patch 应用失败，可能已应用或上下文不匹配"
+            fi
+          else
+            echo "未找到适用于内核 ${{ inputs.kernel_version }} 的 lz4kd 补丁，跳过应用"
           fi
 
-          cp $SUKISU_PATCHES/other/zram/zram_patch/${{ inputs.kernel_version }}/lz4k_oplus.patch ./
-          if ! patch -p1 -F 3 < lz4k_oplus.patch; then
-            echo "::warning::lz4k_oplus.patch 应用失败，可能已应用或上下文不匹配"
+          if [ -f "$SUKISU_PATCHES/other/zram/zram_patch/${{ inputs.kernel_version }}/lz4k_oplus.patch" ]; then
+            cp "$SUKISU_PATCHES/other/zram/zram_patch/${{ inputs.kernel_version }}/lz4k_oplus.patch" ./
+            if ! patch -p1 -F 3 < lz4k_oplus.patch; then
+              echo "::warning::lz4k_oplus.patch 应用失败，可能已应用或上下文不匹配"
+            fi
+          else
+            echo "未找到适用于内核 ${{ inputs.kernel_version }} 的 lz4k_oplus 补丁，跳过应用"
           fi
 
       - name: 修复 6.6 WiFi/蓝牙兼容性（三星 + 小米）
