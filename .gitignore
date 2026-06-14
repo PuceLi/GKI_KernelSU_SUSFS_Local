@@ -69,4 +69,9 @@ web/dist/
 wild_kernel_comparison.md
 action_build_comparison.md
 
+
 /.vs
+
+# Local heavy build tools/sources
+build_root/
+my-nuxt-app/
