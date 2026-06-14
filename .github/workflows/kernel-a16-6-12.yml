@@ -13,7 +13,7 @@ on:
         type: choice
         options:
           - Official
-          - Next
+          #- Next
           - SukiSU
           - SukiSU(40726)
           - SukiSU(40548)
@@ -128,6 +128,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - sub_level: "23"
+            os_patch_level: "2025-06"
+          - sub_level: "30"
+            os_patch_level: "2025-07"
+          - sub_level: "38"
+            os_patch_level: "2025-09"
+          - sub_level: "58"
+            os_patch_level: "2025-12"
           - sub_level: "69"
             os_patch_level: "2026-03"
     uses: ./.github/workflows/build.yml
