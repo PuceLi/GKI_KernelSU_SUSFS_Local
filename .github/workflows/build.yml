@@ -844,7 +844,9 @@ jobs:
           echo "应用 Droidspaces SYSVIPC kABI 修复补丁 (槽位: $SLOT / $SLOT_NAME)..."
           case "$KERNEL_VER" in
             6.12)
-              PATCH_FILE="$DROIDSPACES_PATCHES/kernel-6.12/001.GKI-6.12-or-above-fix_sysvipc_kabi.patch"
+              echo "下载 Goldzxcbug 针对 6.12 的 Droidspaces kABI 兼容性补丁..."
+              wget -q -O /tmp/Kernel_6.12.patch "https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/main/GKI/6.12/Kernel_6.12.patch"
+              PATCH_FILE="/tmp/Kernel_6.12.patch"
               ;;
             5.10|5.15|6.1|6.6)
               PATCH_FILE="$DROIDSPACES_PATCHES/below-kernel-6.12/001.GKI-below-6.12-fix_sysvipc_kabi_${SLOT_NAME}.patch"
