@@ -33,6 +33,7 @@ on:
       revision:
         required: false
         type: string
+        default: "r1"
       build_time:
         required: false
         type: string
@@ -67,6 +68,10 @@ on:
         required: false
         type: string
         default: "off"
+      artifact_upload_mode:
+        required: false
+        type: string
+        default: "上传全部"
       droidspaces_ntsync:
         required: false
         type: boolean
@@ -102,6 +107,7 @@ jobs:
           echo "Re-Kernel     : ${{ inputs.use_rekernel }}"
           echo "Droidspaces   : ${{ inputs.droidspaces }}"
           echo "NTSync        : ${{ inputs.droidspaces_ntsync }}"
+          echo "产物上传模式  : ${{ inputs.artifact_upload_mode }}"
           echo "Stock Config  : 自动检测 config/stock_defconfig"
           echo "========================================"
 
@@ -475,25 +481,6 @@ jobs:
             echo "KSU_LATEST_COMMIT_DATE=未知" >> $GITHUB_ENV
           fi
 
-      - name: 修复 SukiSU SUSFS sulog 参数类型
-        if: inputs.ksu_variant == 'SukiSU' && inputs.enable_susfs
-        working-directory: ${{ env.KERNEL_ROOT }}
-        run: |
-          SULOG_EVENT="common/drivers/kernelsu/sulog/event.c"
-
-          if [ ! -f "$SULOG_EVENT" ]; then
-            echo "未找到 $SULOG_EVENT，跳过 sulog 参数类型修复"
-            exit 0
-          fi
-
-          # SukiSU builtin 513dd54 修改了共用调用点，但 SUSFS 分支仍接收 struct user_arg_ptr *。
-          if grep -q 'struct user_arg_ptr \*argv_user' "$SULOG_EVENT" && grep -q ', USER_ARG_NULL, gfp)' "$SULOG_EVENT"; then
-            sed -i 's|, USER_ARG_NULL, gfp)|, \&USER_ARG_NULL, gfp)|g' "$SULOG_EVENT"
-            echo "已修复 SukiSU SUSFS sulog USER_ARG_NULL 参数类型"
-          else
-            echo "SukiSU SUSFS sulog 参数类型无需修复"
-          fi
-
       - name: 配置 SukiSU 管理器信息
         if: inputs.ksu_variant == 'SukiSU' || inputs.ksu_variant == 'SukiSU(40726)' || inputs.ksu_variant == 'SukiSU(40548)'
         working-directory: ${{ env.KERNEL_ROOT }}/KernelSU
@@ -819,16 +806,6 @@ jobs:
                 fi
               fi
 
-              # 修复 SukiSU 6.6 SELinux hide 调用旧 with_policy 接口导致的链接错误
-              if [[ "${{ inputs.ksu_variant }}" == "SukiSU" ]]; then
-                for SELINUX_FILE in ./security/selinux/hooks.c ./security/selinux/selinuxfs.c; do
-                  if grep -q 'security_.*_with_policy' "$SELINUX_FILE"; then
-                    sed -i -E 's/security_context_to_sid_with_policy\([^,]+, ([^,]+), ([^,]+), ([^,]+), SECSID_NULL, ([^)]+)\)/security_context_to_sid(\1, \2, \3, \4)/g' "$SELINUX_FILE"
-                    sed -i -E 's/security_sid_to_context_with_policy\([^,]+, ([^,]+), ([^,]+), ([^)]+)\)/security_sid_to_context(\1, \2, \3)/g' "$SELINUX_FILE"
-                    sed -i -E 's/security_compute_av_user_with_policy\([^,]+, ([^,]+), ([^,]+), ([^,]+), ([^)]+)\)/security_compute_av_user(\1, \2, \3, \4)/g' "$SELINUX_FILE"
-                  fi
-                done
-              fi
             fi
 
             # Android 16 - 6.12 修复
@@ -1328,9 +1305,24 @@ jobs:
 
       - name: 设置自定义构建时间
         shell: bash
+        env:
+          INPUT_TIME: ${{ inputs.build_time }}
         run: |
-          INPUT_TIME="${{ inputs.build_time }}"
+          set -euo pipefail
+
           if [[ -n "$INPUT_TIME" && "$INPUT_TIME" != "N" && "$INPUT_TIME" != "n" ]]; then
+            TIME_REGEX='^(Mon|Tue|Wed|Thu|Fri|Sat|Sun) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9] UTC [0-9]{4}$'
+            if [[ ! "$INPUT_TIME" =~ $TIME_REGEX ]]; then
+              echo "::warning title=构建时间格式错误::自定义构建时间必须形如 Sun Dec 01 08:10:00 UTC 2024，请删除多余前缀并使用两位日期。"
+              exit 1
+            fi
+
+            NORMALIZED_TIME="$(LC_ALL=C TZ=UTC date -u -d "$INPUT_TIME" +'%a %b %d %T UTC %Y' 2>/dev/null || true)"
+            if [[ "$NORMALIZED_TIME" != "$INPUT_TIME" ]]; then
+              echo "::warning title=构建时间无效::自定义构建时间无法解析为真实 UTC 时间，或星期与日期不匹配。"
+              exit 1
+            fi
+
             DATESTR="$INPUT_TIME"
           else
             DATESTR="$(TZ='UTC' date +'%a %b %d %T %Z %Y')"
@@ -1437,11 +1429,17 @@ jobs:
           gzip -n -k -f -9 ./Image > ./Image.gz
 
       - name: 创建 AnyKernel3 压缩包
+        if: inputs.artifact_upload_mode == '上传全部'
         run: |
-          cd $ANYKERNEL3
+          cd "$ANYKERNEL3"
           ZIP_NAME="${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-AnyKernel3.zip"
           mv ../Image ./Image
           zip -r "../$ZIP_NAME" ./*
+
+      - name: 准备 AnyKernel3 目录
+        if: inputs.artifact_upload_mode != '上传全部'
+        run: |
+          mv ./Image "$ANYKERNEL3/Image"
 
       - name: 构建 Boot 镜像 (Android 12)
         if: inputs.android_version == 'android12'
@@ -1518,7 +1516,16 @@ jobs:
             done
           fi
 
-      - name: 上传构建产物
+      - name: 上传 AnyKernel3 刷入包
+        if: inputs.artifact_upload_mode != '上传全部'
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ inputs.ksu_variant }}_kernel-${{ env.CONFIG }}-AnyKernel3
+          path: AnyKernel3/*
+          compression-level: 9
+
+      - name: 上传全部构建产物
+        if: inputs.artifact_upload_mode == '上传全部'
         uses: actions/upload-artifact@v6
         with:
           name: ${{ inputs.ksu_variant }}_kernel-${{ env.CONFIG }}
