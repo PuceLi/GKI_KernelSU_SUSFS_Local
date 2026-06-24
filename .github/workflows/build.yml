@@ -1264,6 +1264,24 @@ jobs:
           CONFIG_KSU_SUSFS_SUS_MAP=y
           EOF
 
+          - name: 注入DroidSpaces参数
+          run: |
+          cd "$KERNEL_ROOT"
+          cd ./common
+          wget https://www.coolapk.com/link?url=https%3A%2F%2Fraw.githubusercontent.com%2Fravindu644%2FDroidspaces-OSS%2Frefs%2Fheads%2Fmain%2FDocumentation%2Fresources%2Fkernel-patches%2FGKI%2Fbelow-kernel-6.12%2F001.GKI-below-6.12-fix_sysvipc_kabi_3_4_5.patch
+          patch -p1 < 001.GKI-below-6.12-fix_sysvipc_kabi_3_4_5.patch
+          cd ../
+          echo "CONFIG_SYSCTL=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SYSVIPC=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_POSIX_MQUEUE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_NAMESPACES=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_PID_NS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_IPC_NS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_UTS_NS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_USER_NS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DEVTMPFS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DEVTMPFS_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+
       - name: 配置内核名称
         working-directory: ${{ env.KERNEL_ROOT }}
         run: |
