@@ -7,13 +7,21 @@ permissions:
 on:
   workflow_dispatch:
     inputs:
+      kernel_source:
+        description: "Kernel source"
+        required: true
+        type: choice
+        options:
+          - "Original (GKI common)"
+          - "Sultan (Pixel Tensor G4 / zumapro)"
+        default: "Original (GKI common)"
       kernelsu_variant:
         description: "KernelSU variant"
         required: true
         type: choice
         options:
           - Official
-          #- Next
+          - Next
           - SukiSU
           - SukiSU(40726)
           - SukiSU(40548)
@@ -87,6 +95,10 @@ on:
         default: false
   workflow_call:
     inputs:
+      kernel_source:
+        required: false
+        type: string
+        default: "Original (GKI common)"
       kernelsu_variant:
         required: true
         type: string
@@ -138,6 +150,7 @@ on:
 jobs:
   build-kernels-a14-6-1:
     name: "6.1.${{ matrix.sub_level }}-${{ matrix.os_patch_level }}"
+    if: inputs.kernel_source != 'Sultan (Pixel Tensor G4 / zumapro)'
     strategy:
       fail-fast: false
       matrix:
@@ -171,7 +184,25 @@ jobs:
       droidspaces_ntsync: ${{ inputs.droidspaces_ntsync || false }}
       artifact_upload_mode: ${{ inputs.artifact_upload_mode }}
 
-  # Only runs on direct trigger, skipped when called from main.yml
+  # Sultan kernel source (kerneltoast/android_kernel_google_tensynos), fixed to the
+  # zumapro codename -- that's the Tensor G4 (Pixel 9/9 Pro/9 Pro XL/9 Pro Fold) chip.
+  # Root manager choice reuses the same kernelsu_variant input as the Original build,
+  # but only "Next" (KernelSU-Next) is a combination actually verified against this
+  # device tree's hand-built compat patches -- see comments in sultan.yml.
+  build-sultan-kernel:
+    name: "Sultan-zumapro-${{ inputs.kernelsu_variant }}"
+    if: inputs.kernel_source == 'Sultan (Pixel Tensor G4 / zumapro)'
+    uses: ./.github/workflows/sultan.yml
+    secrets: inherit
+    with:
+      codename: "zumapro"
+      android_version: "android14"
+      kernel_version: "6.1"
+      ksu_variant: ${{ inputs.kernelsu_variant }}
+
+  # Only runs on direct trigger, skipped when called from main.yml.
+  # Runs for both Original and Sultan builds -- get-manager.yml handles the
+  # "Next" variant used by Sultan just as well as the others.
   get-ksu-manager:
     if: ${{ !inputs.called_from_main }}
     uses: ./.github/workflows/get-manager.yml
