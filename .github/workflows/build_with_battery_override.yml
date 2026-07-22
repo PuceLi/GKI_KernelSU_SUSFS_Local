@@ -1,0 +1,97 @@
+name: Build GKI Kernel with Battery Override
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: "发布类型"
+        type: choice
+        options: [Actions, Pre-Release, Release]
+        default: Actions
+      kernelsu_variant:
+        description: "KernelSU 变体"
+        type: choice
+        options: [ReSukiSU, Official]
+        default: ReSukiSU
+      android_version:
+        description: "Android 版本"
+        type: choice
+        options: [android12-5.10, android13-5.15, android14-6.1]
+        default: android14-6.1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: GKI_KernelSU_SUSFS
+
+      - name: Checkout GKI kernel source
+        uses: actions/checkout@v4
+        with:
+          repository: aosp-pixel-devices/kernel_redbull
+          path: kernel_source
+          ref: android14-6.1
+
+      - name: Apply battery parameter override patch
+        run: |
+          cd GKI_KernelSU_SUSFS
+          
+          # 检查补丁文件是否存在
+          if [ ! -f "patches/qcom_fg_core_battery_override.patch" ]; then
+            echo "Error: battery override patch not found"
+            exit 1
+          fi
+          
+          if [ ! -f "patches/qcom_fg_alg_battery_override.patch" ]; then
+            echo "Error: battery alg patch not found"
+            exit 1
+          fi
+          
+          # 应用补丁到内核源码
+          cd ../kernel_source
+          
+          # 检查目标文件是否存在
+          if [ ! -f "drivers/power/supply/qcom/qcom_fg_core.c" ]; then
+            echo "Error: qcom_fg_core.c not found"
+            exit 1
+          fi
+          
+          # 应用补丁
+          echo "Applying battery override patches..."
+          patch -p1 < ../GKI_KernelSU_SUSFS/patches/qcom_fg_core_battery_override.patch
+          
+          if [ $? -ne 0 ]; then
+            echo "Error: Failed to apply first patch"
+            exit 1
+          fi
+          
+          patch -p1 < ../GKI_KernelSU_SUSFS/patches/qcom_fg_alg_battery_override.patch
+          
+          if [ $? -ne 0 ]; then
+            echo "Error: Failed to apply second patch"
+            exit 1
+          fi
+          
+          echo "Battery override patches applied successfully"
+          
+          # 验证修改
+          echo "Verifying modifications..."
+          grep -n "xm,design-capacity-mah" drivers/power/supply/qcom/qcom_fg_core.c || exit 1
+          grep -n "override_design_capacity_mah" drivers/power/supply/qcom/qcom_fg_core.c || exit 1
+          echo "Modifications verified"
+
+      - name: Continue with standard build process
+        run: |
+          echo "Battery override integrated, continuing with standard build..."
+          # 这里可以继续你仓库中原有的构建步骤
+          # 或者调用其他workflow文件
+
+      - name: Upload modified kernel sources
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-sources-with-battery-patch
+          path: kernel_source
