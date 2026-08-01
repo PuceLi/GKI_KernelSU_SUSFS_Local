@@ -567,3 +567,22 @@ adb shell getprop > tegu-getprop.txt
   `6.1.157-android14-11-geadf9a793a097-ab10025877-4k`. Добавлен пост-билд гард: `cat
   out/include/config/kernel.release` и fail job если нет точного сток-суффикса. `tegu_defconfig`
   в дереве НЕ содержит CONFIG_LOCALVERSION вообще (проверено fetch) → append AUTO=y корректен.
+- 2026-08-02: **v4 (00130a6, BRANCH/KMI_GENERATION) СРАБОТАЛ для версии — но всё ещё лого.**
+  Распакован артефакт v4 (run 30718353785): `strings Image` →
+  `Linux version 6.1.157-android14-11-geadf9a793a097-ab10025877-4k ... # SMP PREEMPT` —
+  ТОЧНАЯ стоковая строка. Значит версия больше не причина. Пользователь: "опять застрял на
+  лого". → Диагноз: vermagic-ФЛАГИ.
+  **Доказательство:** извлечён стоковый vendor_dlkm.img (из /home/sokolovsky/Downloads/pixel/
+  rom/, ext2, debugfs) → `strings bcmdhd4383.ko` → НАСТОЯЩИЙ стоковый vermagic:
+    `vermagic=6.1.157-android14-11-ge4470993d947-ab15260412 SMP preempt mod_unload modversions aarch64`
+  В нашем v4-Image: `grep -aoc 'mod_unload'` = 0, `modversions` = 0 → Sultan-конфиг выключает
+  CONFIG_MODULE_UNLOAD и CONFIG_MODVERSIONS → наш vermagic `... SMP preempt aarch64` — НЕ
+  совпадает со стоком → модули не грузятся. (Также: Optimistic-релиз имеет версию
+  `6.1.157-Optimistic-00674-g45c94862b20f` → он НЕ может грузить сток-модули; референс tegu_ref).
+  **v5-ФИКС:** в tegu-ветку добавлены `CONFIG_MODULE_UNLOAD=y` и `CONFIG_MODVERSIONS=y`
+  (с удалением возможных дублей). Пост-билд гард расширен: после проверки kernel.release —
+  распаковка Image.lz4 и проверка `grep -a 'mod_unload'/'modversions'` в бинарнике (fail если
+  нет). Риск: modversions CRC (если Sultan-конфиг меняет сигнатуры экспортируемых символов →
+  "disagrees about version of symbol") — вероятно низкий, т.к. GKI ABI фиксирован; проверим на
+  устройстве. Также подтверждено: стоковый флаг `preempt` (CONFIG_PREEMPT=y, без DYNAMIC) — в
+  нашем конфиге тоже. Архитектурный токен `aarch64` — общий (та же база исходников).
