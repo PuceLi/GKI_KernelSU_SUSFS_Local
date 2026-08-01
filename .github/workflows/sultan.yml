@@ -249,6 +249,13 @@ jobs:
 
           sed -i '/echo "+"$/d' scripts/setlocalversion
 
+          # KernelSU/SUSFS code breaks the arm64 GCC LTO link: with CONFIG_LTO_GCC=y
+          # the added drivers produce GOT/PLT entries and an undefined reference to
+          # task_stack_page (from ksu_handle_execve). KernelSU recommends disabling
+          # LTO for custom kernels, so flip the stock Sultan LTO_GCC to LTO_NONE.
+          sed -i '/CONFIG_LTO_GCC=y/d' ./arch/arm64/configs/${{ inputs.codename }}_defconfig
+          echo "CONFIG_LTO_NONE=y" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
+
       - name: Add BBG (Baseband Guard) anti-brick patch
         if: inputs.use_bbg
         run: |
