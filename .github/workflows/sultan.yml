@@ -167,6 +167,20 @@ jobs:
               ;;
           esac
 
+      - name: Apply ReSukiSU static symbol exports
+        run: |
+          echo "Changing to configuration directory: $CONFIG..."
+          cd "$CONFIG"
+
+          # ReSukiSU's static_export_check.mk hard-fails the build when
+          # CONFIG_KALLSYMS_ALL is off (Sultan disables it) unless these symbols
+          # are made non-static in security/selinux/selinuxfs.c:
+          #   - write_op            (note: Sultan has 'static ssize_t (*const write_op[])',
+          #     the extra 'const' slipped past ReSukiSU's exact grep and was wrongly
+          #     reported as exported; make it actually non-static too)
+          #   - sel_handle_status_ops
+          patch -p1 --fuzz=0 < $GITHUB_WORKSPACE/.github/patches/sultan/sultan-resukisu-selinux-export.patch
+
       - name: Apply SUSFS Kernel Patches
         if: contains(matrix.features, 'susfs')
         run: |
