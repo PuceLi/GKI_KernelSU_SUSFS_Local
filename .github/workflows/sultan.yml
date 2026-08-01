@@ -346,11 +346,15 @@ jobs:
             printf -- '-android14-11-geadf9a793a097-ab10025877-4k' > .scmversion
             # Vermagic FLAGS: the stock vendor_dlkm modules carry
             #   vermagic=6.1.157-android14-11-<hash>-ab<n> SMP preempt mod_unload modversions aarch64
-            # (verified on the stock bcmdhd4383.ko). This Sultan tree's base config
-            # disables CONFIG_MODULE_UNLOAD and CONFIG_MODVERSIONS, so the built kernel's
-            # vermagic is "... SMP preempt aarch64" -- the modules then refuse to load
-            # even with a matching version string. Enable both so the flags line up.
-            sed -i '/^CONFIG_MODULE_UNLOAD=/d; /^CONFIG_MODVERSIONS=/d' ./arch/arm64/configs/$DEFCONFIG
+            # (verified on the stock bcmdhd4383.ko). This Sultan tree's base config has
+            # CONFIG_MODULES=n -- no module loading at all -- and all the panel/wifi/modem
+            # drivers are =m, so they are not compiled in and the phone has no display.
+            # The only viable path (the user's working custom kernel did exactly this) is
+            # CONFIG_MODULES=y so the kernel loads the STOCK vendor_dlkm modules from the
+            # untouched vendor_dlkm partition. CONFIG_MODULE_UNLOAD/MODVERSIONS are required
+            # for the vermagic flags to match the stock modules.
+            sed -i '/^CONFIG_MODULES=/d; /^CONFIG_MODULE_UNLOAD=/d; /^CONFIG_MODVERSIONS=/d' ./arch/arm64/configs/$DEFCONFIG
+            echo 'CONFIG_MODULES=y' >> ./arch/arm64/configs/$DEFCONFIG
             echo 'CONFIG_MODULE_UNLOAD=y' >> ./arch/arm64/configs/$DEFCONFIG
             echo 'CONFIG_MODVERSIONS=y' >> ./arch/arm64/configs/$DEFCONFIG
           else
@@ -479,7 +483,10 @@ jobs:
           # kmi-generation fails 'expr : ^[0-9]\+$') -> prints nothing -> the
           # kernel.release is bare "6.1.157" and no vendor module will load.
           make CROSS_COMPILE=$GITHUB_WORKSPACE/gcc-14.2.0-nolibc/aarch64-linux/bin/aarch64-linux- CC=$GITHUB_WORKSPACE/gcc-14.2.0-nolibc/aarch64-linux/bin/aarch64-linux-gcc -j$(nproc --all) $DEFCONFIG
-          make CROSS_COMPILE=$GITHUB_WORKSPACE/gcc-14.2.0-nolibc/aarch64-linux/bin/aarch64-linux- CC=$GITHUB_WORKSPACE/gcc-14.2.0-nolibc/aarch64-linux/bin/aarch64-linux-gcc BRANCH=android14-11 KMI_GENERATION=11 -j$(nproc --all)
+          # Build ONLY the kernel image (Image.lz4), not the =m drivers as .ko --
+          # we flash just boot and rely on the device's stock vendor_dlkm modules,
+          # and the tree's module targets aren't needed (or guaranteed clean).
+          make CROSS_COMPILE=$GITHUB_WORKSPACE/gcc-14.2.0-nolibc/aarch64-linux/bin/aarch64-linux- CC=$GITHUB_WORKSPACE/gcc-14.2.0-nolibc/aarch64-linux/bin/aarch64-linux-gcc BRANCH=android14-11 KMI_GENERATION=11 -j$(nproc --all) Image.lz4
 
           # Verify the release string actually carries the stock suffix; abort
           # the job instead of shipping another vermagic-broken zip.

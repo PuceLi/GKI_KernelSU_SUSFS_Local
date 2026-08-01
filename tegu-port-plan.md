@@ -586,3 +586,25 @@ adb shell getprop > tegu-getprop.txt
   "disagrees about version of symbol") — вероятно низкий, т.к. GKI ABI фиксирован; проверим на
   устройстве. Также подтверждено: стоковый флаг `preempt` (CONFIG_PREEMPT=y, без DYNAMIC) — в
   нашем конфиге тоже. Архитектурный токен `aarch64` — общий (та же база исходников).
+- 2026-08-02: **v5 (16b429f, MODULE_UNLOAD+MODVERSIONS) — сборка упала на гарде, и ЭТО хорошо.**
+  Гард подтвердил: kernel.release = `6.1.157-android14-11-geadf9a793a097-ab10025877-4k` (версия
+  ок), но в Image НЕТ `mod_unload`/`modversions`. Причина: в дефконфиге вообще НЕ задан
+  `CONFIG_MODULES` → он `n` (базовый дефолт) → MODULE_UNLOAD/MODVERSIONS (зависят от MODULES)
+  молча не срабатывают. Проверка: в v4- и в Optimistic-образе `grep -aoc module_layout` = 0 →
+  CONFIG_MODULES=n у ОБОИХ. etnperlong zumapro_defconfig: `CONFIG_GS_DRM_PANEL_UNIFIED=m`,
+  `CONFIG_GS_PANEL_SIMPLE=m`, `CONFIG_DRM_SAMSUNG=m` и пр. — панель/драйверы как модули, но
+  модули выключены → эти драйверы НЕ вкомпилированы → кернел БЕЗ дисплея/wifi/модема. Это и
+  есть корень "застревания на лого" (не только vermagic!).
+  **Рабочее ядро пользователя НАЙДЕНО:** /home/sokolovsky/Downloads/pixel/suki su built in/
+  bootsuki.img (unpack magiskboot → kernel):
+    `Linux version 6.1.157-android14-11-geadf9a793a097-ab10025877-4k (build-user@build-host)
+     (clang 17.0.2) #1 SMP PREEMPT Sun Dec 01 08:10:00 UTC 2024`
+    vermagic: `6.1.157-android14-11-geadf9a793a097-ab10025877-4k SMP preempt mod_unload
+    modversions aarch64` — ТОЧНО как стоковые модули. `module_layout:4` → CONFIG_MODULES=y.
+    Вывод: рабочий кернел = стоковый GKI-дерево + ReSukiSU + точная сток-версия + MODULES/
+    MODULE_UNLOAD/MODVERSIONS=y. Он грузит стоковый vendor_dlkm.
+  **v6-ФИКС:** (1) в tegu-ветку добавлен `CONFIG_MODULES=y` (вместе с MODULE_UNLOAD=y,
+  MODVERSIONS=y); (2) полная сборка сведена к `make ... Image.lz4` (модули не собираем — грузятся
+  стоковые; =m-драйверы в дереве не нужны и не гарантированно чистые). Остаточный риск: CRC
+  modversions (disagrees about version of symbol) — низкий, т.к. Sultan держит GKI ABI; проверим
+  на устройстве (dmesg покажет).
