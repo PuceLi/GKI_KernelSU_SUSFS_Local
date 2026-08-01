@@ -266,6 +266,16 @@ jobs:
           # where LTO defers the check; with LTO_NONE it fails the build otherwise.
           perl -0pi -e 's/\tif \(cb\) \{\n\t\t\/\* copy data to destination buffer \*\//\tif (cb \&\& dst_buf) {\n\t\t\/\* copy data to destination buffer \*\//g' google-modules/soc/gs/drivers/soc/google/gsa/gsa_core.c
 
+          # ReSukiSU kernel/feature/adb_root.c calls current_user_stack_pointer()
+          # (via user_stack_pointer(current_pt_regs()) -> task_pt_regs() ->
+          # task_stack_page()) but does NOT include <linux/sched/task_stack.h>.
+          # On stock GKI the declaration leaks in transitively, but in the Sultan
+          # tree it does not, so GCC 14 emits a call to an external task_stack_page
+          # and vmlinux fails to link with an undefined reference (plus GOT/PLT
+          # checks). sucompat.c and syscall_hook_manager.c already include this
+          # header; add the same include to adb_root.c after <asm/ptrace.h>.
+          sed -i '1a #include <linux/sched/task_stack.h>' ./drivers/kernelsu/feature/adb_root.c
+
       - name: Add BBG (Baseband Guard) anti-brick patch
         if: inputs.use_bbg
         run: |
