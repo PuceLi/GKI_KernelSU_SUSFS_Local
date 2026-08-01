@@ -456,6 +456,16 @@ adb shell getprop > tegu-getprop.txt
    Дополнено: netfilter-набор расширен до рекомендованного Droidspaces (добавлены
    `NETFILTER_XT_MATCH_RECENT`, `NETFILTER_XT_TARGET_LOG`, `IP_SET_HASH_IP`,
    `IP_SET_HASH_NET`, `NETFILTER_XT_SET`; `IP_NF_TARGET_REJECT` уже был `=y`). Все конфиги
-   проверены на наличие в 6.1.157 (`net/netfilter/Kconfig`, `net/netfilter/ipset/Kconfig`,
+   проверены на наличие в 6.1.157 (   `net/netfilter/Kconfig`, `net/netfilter/ipset/Kconfig`,
    `net/ipv4/netfilter/Kconfig`); оба droidspaces-патча перепроверены fuzz=0 (tegu — exit 0,
    zumapro — sched.h+zumapro exit 0).
+- 2026-08-01: **CI-итерации (GCC 14.2.0 на 6.1.157):** патчи легли все, дальше — череда
+   `-Werror "macro redefined"` от GCC (Clang не ругается, поэтому у Optimistic чисто):
+   1) `lib/lz4/lz4hc.c` MIN/MAX → `#undef` перед define (как в апстримном lz4.c);
+   2) `google-modules/bms/google_dual_batt_gauge.c` MAX → фикс обобщён: `git grep` по всему
+   дереву (`*.c *.h`), `#undef` перед каждым `#define MIN/MAX(` (compile-time, бинарь тот же);
+   3) `dwc3-exynos.h` DWC3_LLUCTL (stale vendor) → корень найден: **`init/Kconfig: config WERROR
+   default y`** в Optimistic-дереве → для tegu в defconfig добавляется `CONFIG_WERROR=n`
+   (снимает только строгость сборки; на код/загрузку ноль влияния — тот же код собирается
+   Clang'ом). zumapro 6.1.145 остаётся на `-Werror`. Побочно подтверждено: zram-энхансменты
+   в Sultan-конвейер НЕ попадают (нет zram-шага в sultan.yml).

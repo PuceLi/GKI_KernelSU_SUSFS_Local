@@ -351,6 +351,16 @@ jobs:
             perl -0pi -e 's/(^|\n)#define (MIN|MAX)\(/${1}#undef $2\n#define $2(/g' "$f"
           done < <(git grep -lE '^[[:space:]]*#define (MIN|MAX)\(' -- '*.c' '*.h' 2>/dev/null || true)
 
+          # The tegu tree (6.1.157) defaults CONFIG_WERROR=y (init/Kconfig:
+          # "default y"), and GCC flags macro redefinitions (MIN/MAX, DWC3_LLUCTL,
+          # ...) in lib/lz4 and the vendor google-modules/* as errors, while Clang
+          # does not warn on macro redefinition at all (why the Optimistic build is
+          # clean). Disabling WERROR only relaxes build strictness -- zero effect on
+          # generated code or boot. The zumapro 6.1.145 tree stays on -Werror.
+          if [ "${{ inputs.codename }}" == "tegu" ]; then
+            echo "CONFIG_WERROR=n" >> ./arch/arm64/configs/$DEFCONFIG
+          fi
+
       - name: Add BBG (Baseband Guard) anti-brick patch
         if: inputs.use_bbg
         run: |
