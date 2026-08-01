@@ -348,8 +348,8 @@ jobs:
           # change, no zram involvement. Runs for every codename; the zumapro 6.1.145
           # tree simply has no files that redefine MIN/MAX.
           while read -r f; do
-            perl -0pi -e 's/(^|\n)#define (MIN|MAX)\(/${1}#undef $2\n#define $2(/g' "$f"
-          done < <(git grep -lE '^[[:space:]]*#define (MIN|MAX)\(' -- '*.c' '*.h' 2>/dev/null || true)
+            perl -0pi -e 's/(^|\n)#define[ \t]+(MIN|MAX)\(/${1}#undef $2\n#define $2(/g' "$f"
+          done < <(git grep -lE '^[[:space:]]*#define[[:space:]]+(MIN|MAX)\(' -- '*.c' '*.h' 2>/dev/null || true)
 
           # The tegu tree (6.1.157) defaults CONFIG_WERROR=y (init/Kconfig:
           # "default y"), and GCC flags macro redefinitions (MIN/MAX, DWC3_LLUCTL,
@@ -359,6 +359,15 @@ jobs:
           # generated code or boot. The zumapro 6.1.145 tree stays on -Werror.
           if [ "${{ inputs.codename }}" == "tegu" ]; then
             echo "CONFIG_WERROR=n" >> ./arch/arm64/configs/$DEFCONFIG
+
+            # CONFIG_WERROR alone is not enough: some vendor modules add their OWN
+            # bare -Werror (e.g. bcm4383 Kbuild sets DHDCFLAGS += ... -Werror ...),
+            # which is independent of the global setting. Strip bare -Werror from
+            # every Makefile/Kbuild (keeps -Werror=... variants intact). Compile-time
+            # strictness only, no codegen change.
+            while read -r f; do
+              perl -0pi -e 's/-Werror(?!\s*=)//g' "$f"
+            done < <(git grep -lE '(^|[^[:alnum:]_])-Werror([[:space:]]|$)' -- 'Makefile' '*/Makefile' 'Kbuild' '*/Kbuild' '*.mk' 2>/dev/null || true)
           fi
 
       - name: Add BBG (Baseband Guard) anti-brick patch
