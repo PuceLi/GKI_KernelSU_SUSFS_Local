@@ -338,6 +338,16 @@ jobs:
           # header; add the same include to adb_root.c after <asm/ptrace.h>.
           sed -i '1a #include <linux/sched/task_stack.h>' ./drivers/kernelsu/feature/adb_root.c
 
+          # The tegu tree (6.1.157) ships lz4 1.9.x (lib/lz4/, obj-y for both files)
+          # and include/linux/minmax.h now defines MIN/MAX as macros, so lz4hc.c's
+          # local redefinitions trip GCC -Werror ("MIN/MAX redefined"). lz4.c already
+          # #undefs MIN before redefining; mirror that in lz4hc.c. The zumapro
+          # (6.1.145) tree has the old lz4 layout and no lz4hc.c, so guard on the
+          # file existing.
+          if [ -f ./lib/lz4/lz4hc.c ]; then
+            perl -0pi -e 's/\n#define MIN\(a, b\) \(\(a\) < \(b\) \? \(a\) : \(b\)\)\n#define MAX\(a, b\) \(\(a\) > \(b\) \? \(a\) : \(b\)\)/\n#undef MIN\n#define MIN(a, b) ((a) < (b) ? (a) : (b))\n#undef MAX\n#define MAX(a, b) ((a) > (b) ? (a) : (b))/' ./lib/lz4/lz4hc.c
+          fi
+
       - name: Add BBG (Baseband Guard) anti-brick patch
         if: inputs.use_bbg
         run: |
