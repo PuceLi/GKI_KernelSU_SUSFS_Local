@@ -16,10 +16,10 @@ on:
         required: true
         type: string
       ksu_variant:
-        description: "KernelSU variant (Official/SukiSU/SukiSU(40726)/SukiSU(40548)/ReSukiSU/Next). Only 'Next' is a tested combination against this device tree's hand-built compat patches -- others use upstream setup.sh directly and are NOT confirmed working here."
+        description: "KernelSU variant (ReSukiSU/Official/SukiSU/Next). Only 'ReSukiSU' is a tested combination against this device tree (it implements the SUSFS bridge natively in kernel/feature/sucompat.c). Other variants may build but are not confirmed working here."
         required: false
         type: string
-        default: "Next"
+        default: "ReSukiSU"
 
 jobs:
   build-kernel:
@@ -27,7 +27,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        features: ["stock", "wksu-susfs"]
+        features: ["wksu-susfs"]
+
     steps:
       #- name: Maximize Build Space
       #  uses: AdityaGarg8/remove-unwanted-software@v5
@@ -62,8 +63,7 @@ jobs:
           echo "CONFIG set to: $CONFIG"
 
       - name: Checkout repository
-        # Needed to read config/SukiSU(*).config pinned-commit files for the
-        # legacy SukiSU variants, same files used by build.yml for the GKI pipeline.
+        # Provides the hand-built backport patches under .github/patches/sultan/
         uses: actions/checkout@v7
 
       - name: Determine KernelSU branch
@@ -88,7 +88,7 @@ jobs:
               BRANCH="-s builtin"
               ;;
             "Next")
-              BRANCH=""
+              BRANCH="-s 293ca016cf7196c2e96403a929ea3f464fd3568b"
               ;;
             *)
               if [ -z "$LEGACY_SUKISU_CONFIG" ]; then
@@ -132,21 +132,21 @@ jobs:
           cd "$CONFIG"
 
           case "${{ inputs.ksu_variant }}" in
-            "Official")
-              echo "Adding official KernelSU..."
-              curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash $BRANCH
+            "ReSukiSU")
+              echo "Adding ReSukiSU (primary, tested combination)..."
+              curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash $BRANCH
               ;;
             "Next")
-              echo "Adding KernelSU-Next (pinned commit, the only combination verified against this device tree)..."
-              curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/dev/kernel/setup.sh" | bash -s 293ca016cf7196c2e96403a929ea3f464fd3568b
+              echo "Adding KernelSU-Next (SUSFS bridge via ksun compat patch below)..."
+              curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/dev/kernel/setup.sh" | bash $BRANCH
+              ;;
+            "Official")
+              echo "Adding official KernelSU (untested combination on this device tree)..."
+              curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash $BRANCH
               ;;
             "SukiSU")
-              echo "Adding SukiSU..."
+              echo "Adding SukiSU (untested combination on this device tree)..."
               curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash $BRANCH
-              ;;
-            "ReSukiSU")
-              echo "Adding ReSukiSU..."
-              curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash $BRANCH
               ;;
             *)
               echo "Adding ${{ inputs.ksu_variant }} (legacy pinned SukiSU commit)..."
@@ -154,48 +154,40 @@ jobs:
               ;;
           esac
 
-      - name: Apply SUSFS Patches
+      - name: Apply SUSFS Kernel Patches
         if: contains(matrix.features, 'susfs')
         run: |
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
 
-          SUSFS_VERSION="2.0.0"
-
-          echo "Applying SUSFS patches..."
-
-          # Copy SUSFS patches
-          cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./
+          # New SUSFS source files are copied in, the hook modifications come from
+          # the hand-built backport patch (Sultan 6.1.145 specific, fuzz=0 clean):
           cp ../susfs4ksu/kernel_patches/fs/* ./fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* ./include/linux/
 
-          perl -0pi -e 's/if \(IS_ERR\(f\) && !libperfmgr_redirect\(&f, dfd, tmp, &op, how\)\) \{/if (IS_ERR(f)) {/g' fs/open.c
+          patch -p1 --fuzz=0 < $GITHUB_WORKSPACE/.github/patches/sultan/sultan-susfs-a14-6.1.patch
 
-          # Change to common directory and apply SUSFS patch
-          patch -p1 < 50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch || true
-
-          perl -0pi -e 's/if \(IS_ERR\(f\)\) \{/if (IS_ERR(f) && !libperfmgr_redirect(&f, dfd, tmp, &op, how)) {/g' fs/open.c
-          
-          cp ../kernel_patches/sultan/sys.c_fix.patch ./
-          patch -p1 < sys.c_fix.patch
-
-          # ksun-293ca01-*.patch is hand-built against KernelSU-Next commit 293ca01 on top
-          # of this exact SUSFS commit -- it fixes a compatibility issue specific to that
-          # manager's source layout on this device tree. It is NOT confirmed to apply cleanly
-          # against Official KernelSU / SukiSU-Ultra / ReSukiSU, since their source layout
-          # differs. Only "Next" is a verified-working combination here; other variants build
-          # with the base SUSFS + sys.c_fix patches only. If a non-Next variant fails to build,
-          # check the uploaded *-Rejects artifact first.
+          # KernelSU-Next needs the ksun compat bridge for SUSFS; ReSukiSU provides
+          # the same bridge natively (kernel/feature/sucompat.c) so nothing is
+          # needed for it. Other variants are untested on this device tree.
           if [ "${{ inputs.ksu_variant }}" == "Next" ] && [ -d "KernelSU-Next" ]; then
+            echo "Applying ksun SUSFS compat patch for KernelSU-Next..."
             cd KernelSU-Next
-            # NOTE: upstream's own sultan.yml still points at kernel_patches/wild/... ,
-            # but TheWildJames/kernel_patches moved this file to wild/archived/ on
-            # 2026-05-17 (commit 1f7201c9). Using the current path here.
             cp ${{ github.workspace }}/kernel_patches/wild/archived/ksun-293ca01-susfs-v2.1.0-a14-6.1-ef16cbce.patch ./
-            patch -p1 < ksun-293ca01-susfs-v2.1.0-a14-6.1-ef16cbce.patch
-          else
-            echo "Skipping KernelSU-Next-specific compat patch for variant ${{ inputs.ksu_variant }} (untested combination on this source tree)"
+            patch -p1 --fuzz=0 < ksun-293ca01-susfs-v2.1.0-a14-6.1-ef16cbce.patch
+            cd ..
           fi
+
+      - name: Apply Droidspaces Patches
+        if: contains(matrix.features, 'susfs')
+        run: |
+          echo "Changing to configuration directory: $CONFIG..."
+          cd "$CONFIG"
+
+          # Enables SYSVIPC / POSIX_MQUEUE / namespace / devtmpfs options and moves
+          # sysvsem/sysvshm out of the middle of task_struct (ABI-safe layout so
+          # stock vendor modules keep working), plus the defconfig fragment.
+          patch -p1 --fuzz=0 < $GITHUB_WORKSPACE/.github/patches/sultan/sultan-droidspaces-a14-6.1.patch
 
       - name: Configure KernelSU
         if: contains(matrix.features, 'wksu')
@@ -207,10 +199,7 @@ jobs:
           if [[ "${{ matrix.features }}" == *"susfs"* ]]; then
             echo "CONFIG_KSU_SUSFS=y" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
           else
-            echo "CONFIG_KSU_MANUAL_HOOKS=y" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
             echo "CONFIG_KSU_SUSFS=n" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
-            cp ../kernel_patches/wild/hooks/69_pure_manual_hooks_only.patch ./
-            patch -p1 < 69_pure_manual_hooks_only.patch
           fi
 
       - name: Configure Mountify Support
@@ -222,75 +211,16 @@ jobs:
           echo "CONFIG_TMPFS_XATTR=y" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
           echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
 
-      - name: Configure Networking
-        if: false
-        run: |
-          cd "$CONFIG"
-          # Networking Configuration
-          echo "# Networking Configuration" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
-          echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
-          echo "CONFIG_IP6_NF_TARGET_HL=y" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
-          echo "CONFIG_IP6_NF_MATCH_HL=y" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
-
-      - name: Add IP SET & IPv6_NAT Support
-        shell: bash
-        if: false
-        run: |
-          cd "$CONFIG"
-          cat >> "./arch/arm64/configs/${{ inputs.codename }}_defconfig" << 'EOF'
-          CONFIG_IP_SET=y
-          CONFIG_IP_SET_MAX=65534
-          CONFIG_IP_SET_BITMAP_IP=y
-          CONFIG_IP_SET_BITMAP_IPMAC=y
-          CONFIG_IP_SET_BITMAP_PORT=y
-          CONFIG_IP_SET_HASH_IP=y
-          CONFIG_IP_SET_HASH_IPMARK=y
-          CONFIG_IP_SET_HASH_IPPORT=y
-          CONFIG_IP_SET_HASH_IPPORTIP=y
-          CONFIG_IP_SET_HASH_IPPORTNET=y
-          CONFIG_IP_SET_HASH_IPMAC=y
-          CONFIG_IP_SET_HASH_MAC=y
-          CONFIG_IP_SET_HASH_NETPORTNET=y
-          CONFIG_IP_SET_HASH_NET=y
-          CONFIG_IP_SET_HASH_NETNET=y
-          CONFIG_IP_SET_HASH_NETPORT=y
-          CONFIG_IP_SET_HASH_NETIFACE=y
-          CONFIG_IP_SET_LIST_SET=y
-          CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y
-          CONFIG_NETFILTER_XT_SET=y
-          CONFIG_IP6_NF_NAT=y
-          CONFIG_IP6_NF_TARGET_MASQUERADE=y
-          EOF
-
-      - name: Apply TCP Congestion Control
-        shell: bash
-        if: false
-        run: |
-          cd "$CONFIG"
-          cat >> "./arch/arm64/configs/${{ inputs.codename }}_defconfig" << 'EOF'
-          CONFIG_TCP_CONG_ADVANCED=y
-          CONFIG_TCP_CONG_BBR=y
-          CONFIG_TCP_CONG_CUBIC=y
-          CONFIG_TCP_CONG_BIC=y
-          CONFIG_TCP_CONG_WESTWOOD=y
-          CONFIG_TCP_CONG_HTCP=y
-          CONFIG_DEFAULT_BBR=y
-          CONFIG_DEFAULT_TCP_CONG="bbr"
-          CONFIG_NET_SCH_FQ=y
-          CONFIG_NET_SCH_FQ_CODEL=y
-          EOF
-
-      - name: Run sed and perl Commands
+      - name: Run sed Commands
         if: matrix.features == 'wksu-susfs'
         run: |
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
 
           echo "Running sed commands..."
-          sed -i 's/CONFIG_LOCALVERSION="-Sultan"/CONFIG_LOCALVERSION="-Sultan-Wild"/' ./arch/arm64/configs/${{ inputs.codename }}_defconfig
+          sed -i 's/CONFIG_LOCALVERSION="-Sultan"/CONFIG_LOCALVERSION="-Sultan-SUSFS"/' ./arch/arm64/configs/${{ inputs.codename }}_defconfig
 
           sed -i '/echo "+"$/d' scripts/setlocalversion
-
 
       - name: Build the Kernel
         run: |
@@ -322,7 +252,7 @@ jobs:
           cd ./AnyKernel3
 
           # Zip the files in the AnyKernel3 directory with a new naming convention
-          ZIP_NAME="${{ inputs.codename }}-a16-${{ matrix.features }}-${{ inputs.ksu_variant }}-anykernel3.zip"
+          ZIP_NAME="${{ inputs.codename }}-a${{ inputs.kernel_version }}-${{ matrix.features }}-${{ inputs.ksu_variant }}-anykernel3.zip"
           echo "Creating zip file $ZIP_NAME..."
           zip -r "../$ZIP_NAME" ./*
 
