@@ -549,3 +549,21 @@ adb shell getprop > tegu-getprop.txt
   `.scmversion` = `-android14-11-geadf9a793a097-ab10025877-4k`. Итог: kernel.release =
   `6.1.157-android14-11-geadf9a793a097-ab10025877-4k` = стоковый vermagic → vendor_dlkm
   (panel/wifi/modem) загрузятся. Коммит запушен; сборка в CI.
+- 2026-08-02: **v3 (9416c63, .scmversion) ТОЖЕ НЕ СРАБОТАЛ — и теперь найдена корневая причина.**
+  Распаковка артефакта v3 (run 30717100551): `strings Image` → `Linux version 6.1.157`, без
+  суффикса. В логе сборки замечено: `Usage: ../scripts/setlocalversion [--save-scmversion]
+  [srctree] [branch] [kmi-generation]`. Это `usage()` из arg-parsing: `filechk_kernel.release`
+  вызывает `setlocalversion $(srctree) $(BRANCH) $(KMI_GENERATION)`, а make-переменные BRANCH
+  и KMI_GENERATION в CI-билде НЕ ЗАДАНЫ → скрипт получает пустые `$2`/`$3`, `kmi_generation=""`
+  → `expr '' : '^[0-9]\+$'` = 0 → `usage` (stderr) → stdout пуст → kernel.release = `6.1.157`.
+  Вот почему и голый `6.1.157` с самого начала, и почему `.scmversion` не помог: скрипт падал
+  ДО чтения `.scmversion`. Из стокового boot_log: работающее кастомное ядро имело ровно
+  `6.1.157-android14-11-geadf9a793a097-ab10025877-4k` (строки fsck FSCK "to ..." — сам f2fs
+  `6.1.84...` это версия MKFS-тула, не ядра). → vermagic-теория верна.
+  **v4-ФИКС:** в make-строку полной сборки добавлены `BRANCH=android14-11 KMI_GENERATION=11`
+  (make-переменные, определяющие `$(BRANCH)`/`$(KMI_GENERATION)` в filechk; пробрасываются в
+  sub-make через MAKEFLAGS). Тогда setlocalversion: android_release=android14, kmi=11, usage
+  не срабатывает, `.scmversion` (авторитетно) возвращает сток-суффикс → kernel.release =
+  `6.1.157-android14-11-geadf9a793a097-ab10025877-4k`. Добавлен пост-билд гард: `cat
+  out/include/config/kernel.release` и fail job если нет точного сток-суффикса. `tegu_defconfig`
+  в дереве НЕ содержит CONFIG_LOCALVERSION вообще (проверено fetch) → append AUTO=y корректен.

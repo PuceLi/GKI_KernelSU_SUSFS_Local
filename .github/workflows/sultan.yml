@@ -464,8 +464,24 @@ jobs:
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
 
+          # BRANCH/KMI_GENERATION MUST be set: filechk_kernel.release calls
+          # 'setlocalversion $(srctree) $(BRANCH) $(KMI_GENERATION)', and when
+          # they are empty the Google setlocalversion hits its usage() (empty
+          # kmi-generation fails 'expr : ^[0-9]\+$') -> prints nothing -> the
+          # kernel.release is bare "6.1.157" and no vendor module will load.
           make CROSS_COMPILE=$GITHUB_WORKSPACE/gcc-14.2.0-nolibc/aarch64-linux/bin/aarch64-linux- CC=$GITHUB_WORKSPACE/gcc-14.2.0-nolibc/aarch64-linux/bin/aarch64-linux-gcc -j$(nproc --all) $DEFCONFIG
-          make CROSS_COMPILE=$GITHUB_WORKSPACE/gcc-14.2.0-nolibc/aarch64-linux/bin/aarch64-linux- CC=$GITHUB_WORKSPACE/gcc-14.2.0-nolibc/aarch64-linux/bin/aarch64-linux-gcc LOCALVERSION_AUTO=0 -j$(nproc --all)
+          make CROSS_COMPILE=$GITHUB_WORKSPACE/gcc-14.2.0-nolibc/aarch64-linux/bin/aarch64-linux- CC=$GITHUB_WORKSPACE/gcc-14.2.0-nolibc/aarch64-linux/bin/aarch64-linux-gcc BRANCH=android14-11 KMI_GENERATION=11 -j$(nproc --all)
+
+          # Verify the release string actually carries the stock suffix; abort
+          # the job instead of shipping another vermagic-broken zip.
+          if [ "${{ inputs.codename }}" == "tegu" ]; then
+            RELEASE=$(cat out/include/config/kernel.release)
+            echo "kernel.release = $RELEASE"
+            case "$RELEASE" in
+              6.1.157-android14-11-geadf9a793a097-ab10025877-4k) echo "vermagic suffix OK" ;;
+              *) echo "::error::kernel.release '$RELEASE' does not match stock tegu suffix" >&2; exit 1 ;;
+            esac
+          fi
 
       - name: Copy Images
         run: |
