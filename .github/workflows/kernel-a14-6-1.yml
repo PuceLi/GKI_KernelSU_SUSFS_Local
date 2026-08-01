@@ -200,6 +200,7 @@ jobs:
       kernel_version: "6.1"
       ksu_variant: ${{ inputs.kernelsu_variant }}
       use_bbg: ${{ inputs.use_bbg }}
+      droidspaces_ntsync: ${{ inputs.droidspaces_ntsync || false }}
 
   # Only runs on direct trigger, skipped when called from main.yml.
   # Runs for both Original and Sultan builds -- get-manager.yml handles the

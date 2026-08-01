@@ -25,6 +25,11 @@ on:
         required: false
         type: boolean
         default: true
+      droidspaces_ntsync:
+        description: "Enable NTSync support inside the Droidspaces container (requires Droidspaces)"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build-kernel:
@@ -245,6 +250,32 @@ jobs:
           # Sultan's security/Kconfig indents "help" with a tab, unlike the GKI tree,
           # so the range terminator here is ^[[:space:]]*help$ (would be ^help$ on GKI).
           sed -i '/^config LSM$/,/^[[:space:]]*help$/{ /^[[:space:]]*default/ s/selinux/selinux,baseband_guard/ }' security/Kconfig
+
+      - name: Inject NTSync kernel driver
+        if: inputs.droidspaces_ntsync
+        run: |
+          echo "Changing to configuration directory: $CONFIG..."
+          cd "$CONFIG"
+
+          # NTSync (NT synchronization primitive emulation for running Windows apps
+          # via Wine/Proton inside the Droidspaces container). Same patches and
+          # config the GKI path uses for android14/6.1; both apply cleanly to the
+          # Sultan tree (verified, fuzz=0).
+          wget -q "https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/refs/heads/main/NTsync/ntsync_base.patch"
+          wget -q "https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/refs/heads/main/NTsync/ntsync_compat_android14-6.1.patch"
+
+          patch -p1 --fuzz=0 < "ntsync_base.patch"
+          patch -p1 --fuzz=0 < "ntsync_compat_android14-6.1.patch"
+
+          # The compat patch registers ntsync as a tristate defaulting to m, but the
+          # Sultan build only flashes Image.lz4, so force it built-in.
+          sed -i '/CONFIG_NTSYNC is not set/d' ./arch/arm64/configs/${{ inputs.codename }}_defconfig
+          if ! grep -q "^CONFIG_NTSYNC=y" ./arch/arm64/configs/${{ inputs.codename }}_defconfig; then
+            echo "CONFIG_NTSYNC=y" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
+            echo "CONFIG_NTSYNC enabled"
+          else
+            echo "CONFIG_NTSYNC already enabled"
+          fi
 
       - name: Build the Kernel
         run: |
