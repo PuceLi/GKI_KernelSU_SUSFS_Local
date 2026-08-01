@@ -330,16 +330,20 @@ jobs:
           # and no scm in the CI clone, the observed build had no suffix at all.
           if [ "${{ inputs.codename }}" == "tegu" ]; then
             # Authoritative override: make scripts/setlocalversion echo exactly the
-            # stock suffix (same trick the GKI Original pipeline uses), ignoring
-            # config_localversion/scm entirely.
-            perl -i -0777 -pe 's/(.*)echo "\$\{KERNELVERSION\}.*"/$1echo "\$\{KERNELVERSION\}-android14-11-geadf9a793a097-ab10025877-4k"/s' ./scripts/setlocalversion
-            # Belt-and-suspenders on the defconfig (fallback if the perl above
-            # misses a non-standard setlocalversion): kill AUTO (defaults to y and
-            # would append -g<hash>) and pin CONFIG_LOCALVERSION to the stock suffix.
-            sed -i 's/^CONFIG_LOCALVERSION_AUTO=y/# CONFIG_LOCALVERSION_AUTO is not set/' ./arch/arm64/configs/$DEFCONFIG
-            grep -q '^CONFIG_LOCALVERSION_AUTO' ./arch/arm64/configs/$DEFCONFIG || echo '# CONFIG_LOCALVERSION_AUTO is not set' >> ./arch/arm64/configs/$DEFCONFIG
+            # stock suffix. This tree's setlocalversion (Google variant) builds the
+            # version as: res = config_localversion + LOCALVERSION + $(scm_version),
+            # and scm_version() FIRST checks for a .scmversion file and returns its
+            # contents verbatim (short-circuiting all git/BUILD_NUMBER logic). So:
+            #   - drop CONFIG_LOCALVERSION="-Optimistic" from the defconfig,
+            #   - keep CONFIG_LOCALVERSION_AUTO=y (scm_version is only consulted
+            #     when AUTO is set; with .scmversion present it returns our text),
+            #   - write .scmversion with exactly the stock suffix.
+            # UTS_RELEASE then equals the stock kernel's
+            # "6.1.157-android14-11-geadf9a793a097-ab10025877-4k", which is what
+            # every vendor_dlkm module (panel/wifi/modem) is vermagic-checked against.
             sed -i '/^CONFIG_LOCALVERSION=/d' ./arch/arm64/configs/$DEFCONFIG
-            echo 'CONFIG_LOCALVERSION="-android14-11-geadf9a793a097-ab10025877-4k"' >> ./arch/arm64/configs/$DEFCONFIG
+            grep -q '^CONFIG_LOCALVERSION_AUTO=y' ./arch/arm64/configs/$DEFCONFIG || echo 'CONFIG_LOCALVERSION_AUTO=y' >> ./arch/arm64/configs/$DEFCONFIG
+            printf -- '-android14-11-geadf9a793a097-ab10025877-4k' > .scmversion
           else
             # Sultan uses CONFIG_LOCALVERSION="-Sultan", normalize to our tag.
             # NOTE: zumapro has the same latent vermagic issue (a "-Sultan-SUSFS"

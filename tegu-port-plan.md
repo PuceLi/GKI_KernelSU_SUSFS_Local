@@ -448,8 +448,7 @@ adb shell getprop > tegu-getprop.txt
    есть в tegu-дереве; `out/google-devices/zumapro/dts/*.dtb` даёт те же 4 dtb; ветка
    `sultan-zumapro` — единственная для tegu в AnyKernel3 (sultan-tegu нет). YAML обоих
    workflow валиден.
-- 2026-08-01: **DROIDSPACES — реализован, не нужен отдельный тумблер.** Наш
-   `sultan-droidspaces-*.patch` 1-в-1 повторяет эталонный Droidspaces-OSS
+- 2026-08-01: **DROIDSPACES — реализован, не нужен отдельный тумблер.** Наш 1-в-1 повторяет эталонный Droidspaces-OSS
    `001.GKI-below-6.12-fix_sysvipc_kabi_6_7_8.patch` (ABI-слоты 6/7/8) и в Sultan-конвейере
    применяется всегда (матрица `wksu-susfs`) — контейнер уже поддержан без опции
    `off/678/123/345` (она нужна только Original-джобе, где слот-патч выбирается по версии).
@@ -467,5 +466,86 @@ adb shell getprop > tegu-getprop.txt
    3) `dwc3-exynos.h` DWC3_LLUCTL (stale vendor) → корень найден: **`init/Kconfig: config WERROR
    default y`** в Optimistic-дереве → для tegu в defconfig добавляется `CONFIG_WERROR=n`
    (снимает только строгость сборки; на код/загрузку ноль влияния — тот же код собирается
-   Clang'ом). zumapro 6.1.145 остаётся на `-Werror`. Побочно подтверждено: zram-энхансменты
+   Clang'ом).    zumapro 6.1.145 остаётся на `-Werror`. Побочно подтверждено: zram-энхансменты
    в Sultan-конвейер НЕ попадают (нет zram-шага в sultan.yml).
+   4) после CONFIG_WERROR=n упал только `google-modules/wlan/bcm4383/wb_regon_coordinator.c`
+   `#define\tMIN` (ТАБ, паттерн не находил) + модуль добавляет СВОЙ `-Werror` через
+   `DHDCFLAGS` (`bcm4383/Kbuild:117`), не покрываемый WERROR → в sultan.yml для tegu:
+   паттерн MIN/MAX расширен на `[ \t]+`, и вырезается bare `-Werror` из всех
+   Makefile/Kbuild/*.mk (`perl -0pi -e 's/-Werror(?!\s*=)//g'`, сохраняет `-Werror=...`).
+- 2026-08-01: **CI-билд #1-4 (runs/30703906484, 30704452458, 30706949029, 30707598175)** —
+   все -Werror-фейлы закрыты. Итог: **ядро собралось, прошилось, но после перезагрузки —
+   FASTBOOT-STUCK.** Пользователь ставит сток и вытягивает стоковые образы
+   (boot/vendor_kernel_boot/vendor_dlkm/dtbo) для диагностики. Гипотезы причины (проверить):
+   1) KMI/vermagic несоответствие → стоковые vendor_dlkm не грузятся (наш
+   `CONFIG_LOCALVERSION=-Sultan-SUSFS` меняет версию ядра! — сравнить `uname -r` нашей
+   сборки со стоковой `6.1.157-android14-...-4k`);
+   2) ранний паник ядра (GCC 14 + LTO_NONE) — нужен klog/pstore;
+   3) vendor_kernel_boot/dtb не принят bootloader'ом (сравнить наш dtb-payload со стоковым
+   vendor_kernel_boot);
+   4) отличия нашей defconfig от стоковой (тегу-периферия как модули?).
+- 2026-08-01: **ПОДТВЕРЖДЕНО на стоке:** `uname`/`/proc/version` стока =
+   `6.1.157-android14-11-geadf9a793a097-ab10025877-4k` (clang 17.0.2, +lto). Стоковые модули
+   загружены: `panel_gs_tg4c`, `panel_gs_tg4b/a`, `panel_gs_simple`, `exynos_drm`,
+   `bcmdhd4383`, `gsa` и т.д. → суффикс в sultan.yml совпадает, флаг-строки vermagic
+   (`SMP PREEMPT mod_unload modversions aarch64`) у нас совпадают.
+- 2026-08-01: **КОРЕНЬ ПРОБЛЕМЫ НАЙДЕН — два бага, оба исправлены (commit 9fdc3e1):**
+   (1) **Версия ядра / vermagic.** Наше ядро сообщало ГОЛОЕ `6.1.157` (`/proc/version`),
+   сток = `6.1.157-android14-11-geadf9a793a097-ab10025877-4k`. Причина: tegu-defconfig
+   имеет `CONFIG_LOCALVERSION="-Optimistic"` + `CONFIG_LOCALVERSION_AUTO=y`, но make
+   `LOCALVERSION_AUTO=0` + shallow-клон без scm дали пустой суффикс; наш старый sed
+   `s/^CONFIG_LOCALVERSION=.../` не сработал бы даже на строке. Итог: **ни один
+   vendor_dlkm-модуль не грузится** (панель/wifi/модем — все `=m`) → Android бутается,
+   но «вслепую» (adb жив, дисплея нет, Google-логотип висит). ФИКС: для tegu патчим
+   `scripts/setlocalversion` на точный сток-суффикс (как Original build.yml:1382) +
+   в defconfig `CONFIG_LOCALVERSION`/`AUTO=n`.
+   (2) **vendor_kernel_boot → fastboot.** Наш vkb (восстановленный AK3 sultan-zumapro)
+   bootloader tegu отклоняет → fastboot независимо от содержимого boot (прошивка
+   рабочего boot.img не помогла). А наш boot + сток vkb = Android грузится. Сток vkb и так
+   содержит правильные 4 базовых zumapro-dtb → для tegu убран блок флеша vkb (boot only).
+   Оба факта подтверждены на устройстве (adb, /proc/version, /proc/modules пуст).
+- 2026-08-01: **AK3-механика флеша НЕ виновата.** Сравнены anykernel.sh ветки
+   `sultan-zumapro` (наш конвейер) и релиза Optimistic tegu (`/tmp/opencode/tegu_ref/`):
+   идентичны — `block=boot` (Image.lz4) + `block=vendor_kernel_boot` (dtb), is_slot_device=1.
+   Различие только в device.name*/versions/patchlevels (их мы и меняем). Пользователь
+   подтвердил: прошилось (AK3 прошёл все чекки на Android 17 / SP 2026-07). → виноват
+   КОНТЕНТ (ядро и/или dtb). План:    (а) сток той же прошивки CP2A.260705.006 + вытащить
+   boot/vendor_kernel_boot/dtbo/vendor_dlkm/init_boot; (б) `fastboot boot` референс-ядра
+   (пересобрать boot.img через magiskboot из `/tmp/opencode/tegu_ref/Image.lz4`) — проверить,
+   грузится ли вообще кастом на этой прошивке; (в) mix-and-match (наш boot × сток vkb и
+   наоборот) — изолировать «ядро vs dtb»; (г) после фейла `fastboot boot <сток>` + сразу
+   pull `/sys/fs/pstore` — взять консоль паника; (д) проверить `fastboot getvar all`
+   (unlocked/lock-state/current-slot).
+- 2026-08-01: **ДИАГНОЗ: виноват наш vendor_kernel_boot (dtb), не ядро.** Пользователь дал
+   dmesg (boot_log.txt, ~9.4k строк) своего рабочего кастомного ядра на этом телефоне: бут
+   здоровый (uptime 176s), KernelSU+SUSFS+BBG активны, **стоковый vendor_dlkm bcm4383
+   (собран Google Feb 5 2026, bazel android14-gs-pixel-6.1-26Q2-release) грузится и работает**
+   → версия ядра/vermagic НЕ блокер (кастом с изменённой версией грузит сток-модули). После
+   флеша нашего zip: **не выпускает из fastboot; прошивка рабочего boot.img не помогла** →
+   bootloader грузит ядро ТОЛЬКО вместе с валидным vendor_kernel_boot (dtb+ramdisk), наш
+   vkb, восстановленный AK3 sultan-zumapro, bootloader'ом не принимается. Гипотеза: AK3
+   sultan-zumapro reconstruct vkb несовместим с tegu-bootloader (референс собирает свою
+   сборкой AK3). ФИКС-ГИПОТЕЗА: для tegu dtb = те же 4 базовых zumapro-dtb, УЖЕ лежат в
+   стоковом vendor_kernel_boot → можно НЕ флешить vkb (только boot). Верификация после
+   анбрика: `fastboot boot <наш boot.img>` (сток vkb на месте) — загрузится = ядро ок,
+   фикс = убрать шаг флеша vkb.
+- 2026-08-01: **ПРИЧИНА НЕСРАБАТЫВАНИЯ ФИКСА ВЕРСИИ (v2) НАЙДЕНА.** tegu-дерево (etnperlong
+  16.0.0-optimistic) использует Google-вариант `scripts/setlocalversion`: финальный вывод
+  `echo "$res"`, где `res = collect_files(localversion*) + config_localversion + LOCALVERSION +
+  $(scm_version) + [-ab$BUILD_NUMBER]`. Мой perl целился в `echo "${KERNELVERSION}..."` —
+  такой строки в скрипте нет (это паттерн upstream), поэтому правка была no-op; `CONFIG_
+  LOCALVERSION` шёл в `config_localversion` из auto.conf, но `scripts/kconfig` при `CONFIG_
+  LOCALVERSION_AUTO=y`... фактически `config_localversion` брался из auto.conf НЕверно:
+  строка `CONFIG_LOCALVERSION="-android14-11-...-4k"` там присутствовала, но результат —
+  голый `6.1.157`. Разобрали: `BRANCH`/`KMI_GENERATION` make-переменные в дереве НЕ заданы
+  (только `$(srctree) $(BRANCH) $(KMI_GENERATION)` в filechk_kernel.release), поэтому
+  android_release-ветка не печаталась; `git describe --exact-match` на --depth=1 HEAD тега
+  нет → печатался бы `-g<hash>`... но выяснено, что авто-conf содержал AUTO=y, scm отдал
+  бы `-g<hash>`; наблюдался же ГОЛЫЙ `6.1.157` — значит perl-правка (v2) реально что-то
+  поменяла или `-g<hash>` потерялся. Решение НЕ полагаться на всё это: использовать штатный
+  механизм **`.scmversion`**: `scm_version()` ПЕРВЫМ ДЕЛОМ делает `cat .scmversion` и
+  возвращает его содержимое (проверено по исходнику ветки). v3-фикс: дефконфиг БЕЗ
+  `CONFIG_LOCALVERSION`, `CONFIG_LOCALVERSION_AUTO=y` (сохранён), в корень дерева пишется
+  `.scmversion` = `-android14-11-geadf9a793a097-ab10025877-4k`. Итог: kernel.release =
+  `6.1.157-android14-11-geadf9a793a097-ab10025877-4k` = стоковый vermagic → vendor_dlkm
+  (panel/wifi/modem) загрузятся. Коммит запушен; сборка в CI.

@@ -70,3 +70,6 @@ wild_kernel_comparison.md
 action_build_comparison.md
 
 /.vs
+
+# Session debug backup (temporary, do not commit)
+.session-backup/
