@@ -256,6 +256,16 @@ jobs:
           sed -i '/CONFIG_LTO_GCC=y/d' ./arch/arm64/configs/${{ inputs.codename }}_defconfig
           echo "CONFIG_LTO_NONE=y" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
 
+          # With LTO disabled, GCC 14.2.0 now compiles gsa_core.c with the default
+          # -Werror active and proves (via inlining of gsa_kdn_program_key and
+          # gsa_sjtag_*) that dst_buf can be NULL at the memcpy() in send_kdn_cmd()
+          # and send_sjtag_data_cmd() when the callers pass (NULL, 0). The code is
+          # actually safe (when cb > 0, dst_buf_sz >= cb > 0, so the earlier
+          # dst_buf_sz guard already rejected NULL), so guard the copy the same way
+          # the driver guards its own inputs. This mirrors upstream GKI behaviour
+          # where LTO defers the check; with LTO_NONE it fails the build otherwise.
+          perl -0pi -e 's/\tif \(cb\) \{\n\t\t\/\* copy data to destination buffer \*\//\tif (cb \&\& dst_buf) {\n\t\t\/\* copy data to destination buffer \*\//g' google-modules/soc/gs/drivers/soc/google/gsa/gsa_core.c
+
       - name: Add BBG (Baseband Guard) anti-brick patch
         if: inputs.use_bbg
         run: |
