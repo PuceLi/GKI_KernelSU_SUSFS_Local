@@ -22,9 +22,9 @@
    их можно использовать как референс/базу вместо портирования «с нуля».
 4. **РЕШЕНО: берём вариант (B)** — готовый tegu-порт на **6.1.157** (etnperlong/miacate
    «Optimistic Kernel», та же Sultan-база, tegu уже работает). Все ручные патчи
-   (`sultan-susfs-*`, `sultan-droidspaces-*`, selinux-export) переделаем под 6.1.157.
-   Тулчейн оставляем GCC 14.2.0 (наш зелёный конвейер); переход на Clang 21 — только
-   если make-сборка на 6.1.157 упрётся.
+   (`sultan-susfs-*`, `sultan-droidspaces-*`, selinux-export) проверены на 6.1.157 (fuzz=0,
+   см. журнал); droidspaces использует tegu-вариант. Тулчейн оставляем GCC 14.2.0 (наш
+   зелёный конвейер); переход на Clang 21 — только если make-сборка на 6.1.157 упрётся.
 
 ---
 
@@ -448,3 +448,14 @@ adb shell getprop > tegu-getprop.txt
    есть в tegu-дереве; `out/google-devices/zumapro/dts/*.dtb` даёт те же 4 dtb; ветка
    `sultan-zumapro` — единственная для tegu в AnyKernel3 (sultan-tegu нет). YAML обоих
    workflow валиден.
+- 2026-08-01: **DROIDSPACES — реализован, не нужен отдельный тумблер.** Наш
+   `sultan-droidspaces-*.patch` 1-в-1 повторяет эталонный Droidspaces-OSS
+   `001.GKI-below-6.12-fix_sysvipc_kabi_6_7_8.patch` (ABI-слоты 6/7/8) и в Sultan-конвейере
+   применяется всегда (матрица `wksu-susfs`) — контейнер уже поддержан без опции
+   `off/678/123/345` (она нужна только Original-джобе, где слот-патч выбирается по версии).
+   Дополнено: netfilter-набор расширен до рекомендованного Droidspaces (добавлены
+   `NETFILTER_XT_MATCH_RECENT`, `NETFILTER_XT_TARGET_LOG`, `IP_SET_HASH_IP`,
+   `IP_SET_HASH_NET`, `NETFILTER_XT_SET`; `IP_NF_TARGET_REJECT` уже был `=y`). Все конфиги
+   проверены на наличие в 6.1.157 (`net/netfilter/Kconfig`, `net/netfilter/ipset/Kconfig`,
+   `net/ipv4/netfilter/Kconfig`); оба droidspaces-патча перепроверены fuzz=0 (tegu — exit 0,
+   zumapro — sched.h+zumapro exit 0).
