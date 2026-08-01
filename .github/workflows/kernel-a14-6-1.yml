@@ -14,6 +14,7 @@ on:
         options:
           - "Original (GKI common)"
           - "Sultan (Pixel Tensor G4 / zumapro)"
+          - "Sultan (Pixel Tensor G4 / tegu)"
         default: "Original (GKI common)"
       kernelsu_variant:
         description: "KernelSU variant"
@@ -150,7 +151,7 @@ on:
 jobs:
   build-kernels-a14-6-1:
     name: "6.1.${{ matrix.sub_level }}-${{ matrix.os_patch_level }}"
-    if: inputs.kernel_source != 'Sultan (Pixel Tensor G4 / zumapro)'
+    if: inputs.kernel_source != 'Sultan (Pixel Tensor G4 / zumapro)' && inputs.kernel_source != 'Sultan (Pixel Tensor G4 / tegu)'
     strategy:
       fail-fast: false
       matrix:
@@ -196,6 +197,26 @@ jobs:
     secrets: inherit
     with:
       codename: "zumapro"
+      android_version: "android14"
+      kernel_version: "6.1"
+      ksu_variant: ${{ inputs.kernelsu_variant }}
+      use_bbg: ${{ inputs.use_bbg }}
+      droidspaces_ntsync: ${{ inputs.droidspaces_ntsync || false }}
+
+  # Pixel 9a (tegu): built from etnperlong's Sultan-based tegu port (6.1.157) via
+  # the same sultan.yml pipeline. tegu's vendor_kernel_boot dtb payload is the same
+  # set of base zumapro dtbs (the tegu-specific overlay lives in the untouched
+  # stock dtbo partition, selected by ro.boot.dtbo_idx), and anykernel.sh is sed'ed
+  # to the tegu device inside sultan.yml. The hand-built .github/patches/sultan/
+  # hooks are verified on 6.1.157 (fuzz=0): susfs clean, selinux-export clean,
+  # droidspaces uses the tegu-specific variant (sched.h + zumapro_defconfig only).
+  build-sultan-tegu-kernel:
+    name: "Sultan-tegu-${{ inputs.kernelsu_variant }}"
+    if: inputs.kernel_source == 'Sultan (Pixel Tensor G4 / tegu)'
+    uses: ./.github/workflows/sultan.yml
+    secrets: inherit
+    with:
+      codename: "tegu"
       android_version: "android14"
       kernel_version: "6.1"
       ksu_variant: ${{ inputs.kernelsu_variant }}

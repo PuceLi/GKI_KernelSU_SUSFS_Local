@@ -62,12 +62,32 @@ jobs:
 
       - name: Set CONFIG Environment Variable
         run: |
-          CONFIG="android_kernel_google_tensynos"
+          # Directory name of the cloned kernel tree. zumapro (and the older
+          # gs201/zuma) use kerneltoast's tensynos tree; tegu (Pixel 9a) is built
+          # from etnperlong's Sultan-based tegu port (6.1.157).
+          if [ "${{ inputs.codename }}" == "tegu" ]; then
+            CONFIG="android_kernel_google_tegu"
+          else
+            CONFIG="android_kernel_google_tensynos"
+          fi
 
           # Set CONFIG as an environment variable for future steps
           echo "CONFIG=$CONFIG" >> $GITHUB_ENV
 
           echo "CONFIG set to: $CONFIG"
+
+      - name: Set DEFCONFIG Environment Variable
+        run: |
+          # Defconfig filename. The tegu tree (etnperlong) keeps Sultan's
+          # zumapro_defconfig name -- there is no tegu_defconfig.
+          if [ "${{ inputs.codename }}" == "tegu" ]; then
+            DEFCONFIG="zumapro_defconfig"
+          else
+            DEFCONFIG="${{ inputs.codename }}_defconfig"
+          fi
+
+          echo "DEFCONFIG=$DEFCONFIG" >> $GITHUB_ENV
+          echo "DEFCONFIG set to: $DEFCONFIG"
 
       - name: Download and extract GCC 14.2.0 toolchain
         run: |
@@ -124,7 +144,14 @@ jobs:
         run: |
           echo "Cloning AnyKernel3 and other dependencies..."
 
+          # tegu has no dedicated sultan-tegu branch on TheWildJames/AnyKernel3;
+          # sultan-zumapro already implements the exact boot + vendor_kernel_boot
+          # flash scheme, and we sed its anykernel.sh to the tegu device values
+          # in a dedicated step below.
           ANYKERNEL_BRANCH="sultan-${{ inputs.codename }}"
+          if [ "${{ inputs.codename }}" == "tegu" ]; then
+            ANYKERNEL_BRANCH="sultan-zumapro"
+          fi
 
           # Debug print the branches
           echo "Using branch for AnyKernel3: $ANYKERNEL_BRANCH"
@@ -132,11 +159,33 @@ jobs:
           # Clone repositories using the branch names
           git clone https://github.com/TheWildJames/AnyKernel3.git -b "$ANYKERNEL_BRANCH"
           git clone https://github.com/TheWildJames/kernel_patches.git
-          git clone https://github.com/kerneltoast/android_kernel_google_tensynos --depth=1
+          if [ "${{ inputs.codename }}" == "tegu" ]; then
+            git clone https://github.com/etnperlong/android_kernel_google_tegu --depth=1
+          else
+            git clone https://github.com/kerneltoast/android_kernel_google_tensynos --depth=1
+          fi
           SUSFS_BRANCH="gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}"
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "$SUSFS_BRANCH"
           cd susfs4ksu
           git checkout ef16cbce5c5195988b9b630de85466148cbbcdef
+
+      - name: Patch AnyKernel3 anykernel.sh for tegu
+        if: inputs.codename == 'tegu'
+        run: |
+          echo "Patching AnyKernel3 anykernel.sh for tegu (Pixel 9a)..."
+          cd AnyKernel3
+
+          # sultan-zumapro's anykernel.sh allows only caiman/komodo/tokay/comet
+          # and supported.versions=16. The Pixel 9a reports ro.product.device=tegu
+          # and runs Android 17 (SP 2026-07), so both checks would abort the flash
+          # ("Unsupported device/Android version"). Match the reference Optimistic
+          # release: device.name1=tegu, versions=17, patchlevels open-ended to 2026-09.
+          sed -i 's/^device\.name1=.*/device.name1=tegu/; s/^device\.name2=.*/device.name2=/; s/^device\.name3=.*/device.name3=/; s/^device\.name4=.*/device.name4=/; s/^device\.name5=.*/device.name5=/' anykernel.sh
+          sed -i 's/^supported\.versions=.*/supported.versions=17/' anykernel.sh
+          sed -i 's/^supported\.patchlevels=.*/supported.patchlevels=- 2026-09/' anykernel.sh
+
+          echo "Patched anykernel.sh:"
+          grep -E 'device\.name|supported\.' anykernel.sh
 
       - name: Add KernelSU
         if: contains(matrix.features, 'wksu')
@@ -214,19 +263,28 @@ jobs:
           # Enables SYSVIPC / POSIX_MQUEUE / namespace / devtmpfs options and moves
           # sysvsem/sysvshm out of the middle of task_struct (ABI-safe layout so
           # stock vendor modules keep working), plus the defconfig fragment.
-          patch -p1 --fuzz=0 < $GITHUB_WORKSPACE/.github/patches/sultan/sultan-droidspaces-a14-6.1.patch
+          #
+          # The Sultan 6.1.145 patch appends the fragment to gs201/zuma/zumapro
+          # defconfigs; the etnperlong tegu tree only carries zumapro_defconfig
+          # (gs201/zuma hunks fail with fuzz=0), so use the tegu-specific variant
+          # there (sched.h + zumapro_defconfig only).
+          if [ "${{ inputs.codename }}" == "tegu" ]; then
+            patch -p1 --fuzz=0 < $GITHUB_WORKSPACE/.github/patches/sultan/sultan-droidspaces-a14-6.1-tegu.patch
+          else
+            patch -p1 --fuzz=0 < $GITHUB_WORKSPACE/.github/patches/sultan/sultan-droidspaces-a14-6.1.patch
+          fi
 
       - name: Configure KernelSU
         if: contains(matrix.features, 'wksu')
         run: |
           cd "$CONFIG"
           # KernelSU Configuration
-          echo "# KernelSU Configuration" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
-          echo "CONFIG_KSU=y" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
+          echo "# KernelSU Configuration" >> ./arch/arm64/configs/$DEFCONFIG
+          echo "CONFIG_KSU=y" >> ./arch/arm64/configs/$DEFCONFIG
           if [[ "${{ matrix.features }}" == *"susfs"* ]]; then
-            echo "CONFIG_KSU_SUSFS=y" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
+            echo "CONFIG_KSU_SUSFS=y" >> ./arch/arm64/configs/$DEFCONFIG
           else
-            echo "CONFIG_KSU_SUSFS=n" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
+            echo "CONFIG_KSU_SUSFS=n" >> ./arch/arm64/configs/$DEFCONFIG
           fi
 
       - name: Configure Mountify Support
@@ -234,9 +292,9 @@ jobs:
         run: |
           cd "$CONFIG"
           # Mountify Support
-          echo "# Mountify Support" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
-          echo "CONFIG_TMPFS_XATTR=y" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
-          echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
+          echo "# Mountify Support" >> ./arch/arm64/configs/$DEFCONFIG
+          echo "CONFIG_TMPFS_XATTR=y" >> ./arch/arm64/configs/$DEFCONFIG
+          echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./arch/arm64/configs/$DEFCONFIG
 
       - name: Run sed Commands
         if: matrix.features == 'wksu-susfs'
@@ -245,16 +303,20 @@ jobs:
           cd "$CONFIG"
 
           echo "Running sed commands..."
-          sed -i 's/CONFIG_LOCALVERSION="-Sultan"/CONFIG_LOCALVERSION="-Sultan-SUSFS"/' ./arch/arm64/configs/${{ inputs.codename }}_defconfig
+
+          # Sultan uses CONFIG_LOCALVERSION="-Sultan", the Optimistic tegu tree
+          # uses "-Optimistic"; normalize whatever is there to our tag.
+          sed -i 's/^CONFIG_LOCALVERSION=".*"/CONFIG_LOCALVERSION="-Sultan-SUSFS"/' ./arch/arm64/configs/$DEFCONFIG
 
           sed -i '/echo "+"$/d' scripts/setlocalversion
 
-          # KernelSU/SUSFS code breaks the arm64 GCC LTO link: with CONFIG_LTO_GCC=y
+          # KernelSU/SUSFS code breaks the arm64 LTO link: with LTO (GCC or Clang)
           # the added drivers produce GOT/PLT entries and an undefined reference to
           # task_stack_page (from ksu_handle_execve). KernelSU recommends disabling
-          # LTO for custom kernels, so flip the stock Sultan LTO_GCC to LTO_NONE.
-          sed -i '/CONFIG_LTO_GCC=y/d' ./arch/arm64/configs/${{ inputs.codename }}_defconfig
-          echo "CONFIG_LTO_NONE=y" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
+          # LTO for custom kernels, so flip any stock LTO to LTO_NONE. The tegu
+          # defconfig ships CONFIG_LTO_CLANG_THIN=y, so clear all three variants.
+          sed -i '/^CONFIG_LTO=y$/d; /^CONFIG_LTO_GCC=y$/d; /^CONFIG_LTO_CLANG=y$/d; /^CONFIG_LTO_CLANG_THIN=y$/d' ./arch/arm64/configs/$DEFCONFIG
+          echo "CONFIG_LTO_NONE=y" >> ./arch/arm64/configs/$DEFCONFIG
 
           # With LTO disabled, GCC 14.2.0 now compiles gsa_core.c with the default
           # -Werror active and proves (via inlining of gsa_kdn_program_key and
@@ -289,7 +351,7 @@ jobs:
           # obj-$(CONFIG_BBG) + the Kconfig source into security/.
           wget -O- https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh | bash
 
-          echo "CONFIG_BBG=y" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
+          echo "CONFIG_BBG=y" >> ./arch/arm64/configs/$DEFCONFIG
 
           # Sultan's security/Kconfig indents "help" with a tab, unlike the GKI tree,
           # so the range terminator here is ^[[:space:]]*help$ (would be ^help$ on GKI).
@@ -312,10 +374,10 @@ jobs:
           patch -p1 --fuzz=0 < "ntsync_compat_android14-6.1.patch"
 
           # The compat patch registers ntsync as a tristate defaulting to m, but the
-          # Sultan build only flashes Image.lz4, so force it built-in.
-          sed -i '/CONFIG_NTSYNC is not set/d' ./arch/arm64/configs/${{ inputs.codename }}_defconfig
-          if ! grep -q "^CONFIG_NTSYNC=y" ./arch/arm64/configs/${{ inputs.codename }}_defconfig; then
-            echo "CONFIG_NTSYNC=y" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
+          # build only flashes Image.lz4, so force it built-in.
+          sed -i '/CONFIG_NTSYNC is not set/d' ./arch/arm64/configs/$DEFCONFIG
+          if ! grep -q "^CONFIG_NTSYNC=y" ./arch/arm64/configs/$DEFCONFIG; then
+            echo "CONFIG_NTSYNC=y" >> ./arch/arm64/configs/$DEFCONFIG
             echo "CONFIG_NTSYNC enabled"
           else
             echo "CONFIG_NTSYNC already enabled"
@@ -326,7 +388,7 @@ jobs:
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
 
-          make CROSS_COMPILE=$GITHUB_WORKSPACE/gcc-14.2.0-nolibc/aarch64-linux/bin/aarch64-linux- CC=$GITHUB_WORKSPACE/gcc-14.2.0-nolibc/aarch64-linux/bin/aarch64-linux-gcc -j$(nproc --all) ${{ inputs.codename }}_defconfig
+          make CROSS_COMPILE=$GITHUB_WORKSPACE/gcc-14.2.0-nolibc/aarch64-linux/bin/aarch64-linux- CC=$GITHUB_WORKSPACE/gcc-14.2.0-nolibc/aarch64-linux/bin/aarch64-linux-gcc -j$(nproc --all) $DEFCONFIG
           make CROSS_COMPILE=$GITHUB_WORKSPACE/gcc-14.2.0-nolibc/aarch64-linux/bin/aarch64-linux- CC=$GITHUB_WORKSPACE/gcc-14.2.0-nolibc/aarch64-linux/bin/aarch64-linux-gcc LOCALVERSION_AUTO=0 -j$(nproc --all)
 
       - name: Copy Images
@@ -341,7 +403,7 @@ jobs:
             #cp ./out/google-devices/gs201/dts/dtbo.img ../AnyKernel3/dtbo.img
           elif [ "${{ inputs.codename }}" == "zuma" ]; then
             cat ./out/google-devices/zuma/dts/*.dtb > ../AnyKernel3/dtb
-          elif [ "${{ inputs.codename }}" == "zumapro" ]; then
+          elif [ "${{ inputs.codename }}" == "zumapro" ] || [ "${{ inputs.codename }}" == "tegu" ]; then
             cat ./out/google-devices/zumapro/dts/*.dtb > ../AnyKernel3/dtb
           fi
 
