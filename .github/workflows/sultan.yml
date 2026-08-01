@@ -184,8 +184,18 @@ jobs:
           sed -i 's/^supported\.versions=.*/supported.versions=17/' anykernel.sh
           sed -i 's/^supported\.patchlevels=.*/supported.patchlevels=- 2026-09/' anykernel.sh
 
+          # Do NOT flash vendor_kernel_boot for tegu. The sultan-zumapro AK3
+          # reconstructs vendor_kernel_boot.img (stock vendor ramdisk + our dtb)
+          # in a way the tegu bootloader rejects -> device lands in fastboot no
+          # matter what boot contains (observed live: flashing a known-good
+          # boot.img did not fix it). The stock vendor_kernel_boot already carries
+          # the correct 4 base zumapro DTBs for tegu, so flashing only boot is
+          # sufficient and safe. (Verified: our boot.img + stock vendor_kernel_boot
+          # boots Android -- only the vendor modules were missing.)
+          sed -i '/# vendor_kernel_boot installation (for dtb)/,/^flash_boot;/d' anykernel.sh
+
           echo "Patched anykernel.sh:"
-          grep -E 'device\.name|supported\.' anykernel.sh
+          grep -E 'device\.name|supported\.|block=' anykernel.sh
 
       - name: Add KernelSU
         if: contains(matrix.features, 'wksu')
@@ -304,9 +314,39 @@ jobs:
 
           echo "Running sed commands..."
 
-          # Sultan uses CONFIG_LOCALVERSION="-Sultan", the Optimistic tegu tree
-          # uses "-Optimistic"; normalize whatever is there to our tag.
-          sed -i 's/^CONFIG_LOCALVERSION=".*"/CONFIG_LOCALVERSION="-Sultan-SUSFS"/' ./arch/arm64/configs/$DEFCONFIG
+          # === Kernel version string (vermagic) ===
+          # Stock vendor_dlkm modules (display panel, wifi bcm4383, modem s5300,
+          # ...) are version-verified at load: the module vermagic must equal the
+          # running kernel's UTS_RELEASE. The tegu stock kernel (Android 17,
+          # CP2A.260705.006) reports
+          #   6.1.157-android14-11-geadf9a793a097-ab10025877-4k
+          # and every vendor module is built against that exact string. If our
+          # kernel reports anything else, ALL vendor modules fail to load
+          # ("version magic ... should be ..."): Android still boots (core is
+          # fine, adb works) but headless -- no panel, no wifi, no modem. Observed
+          # live: /proc/version was bare "6.1.157", /proc/modules was empty.
+          # The tegu defconfig ships CONFIG_LOCALVERSION="-Optimistic" and
+          # CONFIG_LOCALVERSION_AUTO=y; with LOCALVERSION_AUTO=0 on the make line
+          # and no scm in the CI clone, the observed build had no suffix at all.
+          if [ "${{ inputs.codename }}" == "tegu" ]; then
+            # Authoritative override: make scripts/setlocalversion echo exactly the
+            # stock suffix (same trick the GKI Original pipeline uses), ignoring
+            # config_localversion/scm entirely.
+            perl -i -0777 -pe 's/(.*)echo "\$\{KERNELVERSION\}.*"/$1echo "\$\{KERNELVERSION\}-android14-11-geadf9a793a097-ab10025877-4k"/s' ./scripts/setlocalversion
+            # Belt-and-suspenders on the defconfig (fallback if the perl above
+            # misses a non-standard setlocalversion): kill AUTO (defaults to y and
+            # would append -g<hash>) and pin CONFIG_LOCALVERSION to the stock suffix.
+            sed -i 's/^CONFIG_LOCALVERSION_AUTO=y/# CONFIG_LOCALVERSION_AUTO is not set/' ./arch/arm64/configs/$DEFCONFIG
+            grep -q '^CONFIG_LOCALVERSION_AUTO' ./arch/arm64/configs/$DEFCONFIG || echo '# CONFIG_LOCALVERSION_AUTO is not set' >> ./arch/arm64/configs/$DEFCONFIG
+            sed -i '/^CONFIG_LOCALVERSION=/d' ./arch/arm64/configs/$DEFCONFIG
+            echo 'CONFIG_LOCALVERSION="-android14-11-geadf9a793a097-ab10025877-4k"' >> ./arch/arm64/configs/$DEFCONFIG
+          else
+            # Sultan uses CONFIG_LOCALVERSION="-Sultan", normalize to our tag.
+            # NOTE: zumapro has the same latent vermagic issue (a "-Sultan-SUSFS"
+            # suffix means stock vendor_dlkm won't load); revisit when it is
+            # flashed on-device.
+            sed -i 's/^CONFIG_LOCALVERSION=".*"/CONFIG_LOCALVERSION="-Sultan-SUSFS"/' ./arch/arm64/configs/$DEFCONFIG
+          fi
 
           sed -i '/echo "+"$/d' scripts/setlocalversion
 
