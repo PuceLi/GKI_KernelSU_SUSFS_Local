@@ -53,15 +53,12 @@ jobs:
       #    remove-cached-tools: 'false'   # Avoid unless confirmed safe
       #    verbose: 'true'                # Enable detailed logging
 
-      - name: Download and extract GCC 14.2.0 toolchain
-        run: |
-          echo "Downloading GCC 14.2.0 cross-compiler toolchain..."
-          wget https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/14.2.0/x86_64-gcc-14.2.0-nolibc-aarch64-linux.tar.gz
-          echo "Extracting .gz file..."
-          gunzip x86_64-gcc-14.2.0-nolibc-aarch64-linux.tar.gz
-          echo "Extracting .tar file..."
-          tar -xf x86_64-gcc-14.2.0-nolibc-aarch64-linux.tar
-          echo "GCC 14.2.0 toolchain extracted successfully"
+      - name: Checkout repository
+        # Provides the hand-built backport patches under .github/patches/sultan/
+        # NOTE: must run BEFORE extracting the toolchain -- actions/checkout does a
+        # hard clean (clean: true) that wipes untracked files like the extracted
+        # gcc-14.2.0-nolibc/ directory if the toolchain lands first.
+        uses: actions/checkout@v7
 
       - name: Set CONFIG Environment Variable
         run: |
@@ -72,9 +69,15 @@ jobs:
 
           echo "CONFIG set to: $CONFIG"
 
-      - name: Checkout repository
-        # Provides the hand-built backport patches under .github/patches/sultan/
-        uses: actions/checkout@v7
+      - name: Download and extract GCC 14.2.0 toolchain
+        run: |
+          echo "Downloading GCC 14.2.0 cross-compiler toolchain..."
+          wget https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/14.2.0/x86_64-gcc-14.2.0-nolibc-aarch64-linux.tar.gz
+          echo "Extracting .gz file..."
+          gunzip x86_64-gcc-14.2.0-nolibc-aarch64-linux.tar.gz
+          echo "Extracting .tar file..."
+          tar -xf x86_64-gcc-14.2.0-nolibc-aarch64-linux.tar
+          echo "GCC 14.2.0 toolchain extracted successfully"
 
       - name: Determine KernelSU branch
         if: contains(matrix.features, 'wksu')
