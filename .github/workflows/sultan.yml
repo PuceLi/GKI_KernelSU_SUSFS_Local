@@ -20,6 +20,11 @@ on:
         required: false
         type: string
         default: "ReSukiSU"
+      use_bbg:
+        description: "Enable BBG (Baseband Guard, anti-brick)"
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   build-kernel:
@@ -221,6 +226,25 @@ jobs:
           sed -i 's/CONFIG_LOCALVERSION="-Sultan"/CONFIG_LOCALVERSION="-Sultan-SUSFS"/' ./arch/arm64/configs/${{ inputs.codename }}_defconfig
 
           sed -i '/echo "+"$/d' scripts/setlocalversion
+
+      - name: Add BBG (Baseband Guard) anti-brick patch
+        if: inputs.use_bbg
+        run: |
+          echo "Changing to configuration directory: $CONFIG..."
+          cd "$CONFIG"
+
+          # Baseband Guard blocks writes to baseband partitions unless the target
+          # is allowlisted. vc-teahouse's setup.sh supports non-GKI trees (security/
+          # + include/ at the repo root), so it works directly on the Sultan source.
+          # It clones the driver, symlinks security/baseband-guard, and wires
+          # obj-$(CONFIG_BBG) + the Kconfig source into security/.
+          wget -O- https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh | bash
+
+          echo "CONFIG_BBG=y" >> ./arch/arm64/configs/${{ inputs.codename }}_defconfig
+
+          # Sultan's security/Kconfig indents "help" with a tab, unlike the GKI tree,
+          # so the range terminator here is ^[[:space:]]*help$ (would be ^help$ on GKI).
+          sed -i '/^config LSM$/,/^[[:space:]]*help$/{ /^[[:space:]]*default/ s/selinux/selinux,baseband_guard/ }' security/Kconfig
 
       - name: Build the Kernel
         run: |
