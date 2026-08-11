@@ -981,12 +981,21 @@ jobs:
           # default to the CUBIC value (m) and get built as .ko. Kleaf/Bazel
           # hard-fails the build when a module is built but not declared in the
           # kernel_build module_outs list ("kernel modules are built but not
-          # copied"). Declare them so they are packaged instead of aborting.
-          if grep -qF '"net/ipv4/tcp_bic.ko"' BUILD.bazel; then
-            echo "module_outs already declares BBRv3 TCP CC modules"
+          # copied"). In Kleaf the generated kernel_aarch64 target pulls its
+          # module_outs from get_gki_modules_list() in modules.bzl (there is no
+          # literal "module_outs = [" in BUILD.bazel for GKI targets), so the
+          # three modules must be declared there. Only do this when BBRv3 is
+          # enabled: listing a module that is not built also fails the build.
+          if grep -qF '"net/ipv4/tcp_bic.ko"' modules.bzl; then
+            echo "modules.bzl already declares BBRv3 TCP CC modules"
           else
-            perl -0pi -e 's/(module_outs = \[)/$1\n        "net\/ipv4\/tcp_bic.ko",\n        "net\/ipv4\/tcp_htcp.ko",\n        "net\/ipv4\/tcp_westwood.ko",/' BUILD.bazel
-            echo "Declared tcp_bic/tcp_htcp/tcp_westwood in BUILD.bazel module_outs"
+            perl -0pi -e 's/(    "net\/ieee802154\/ieee802154_socket.ko",\n)/$1    "net\/ipv4\/tcp_bic.ko",\n    "net\/ipv4\/tcp_htcp.ko",\n    "net\/ipv4\/tcp_westwood.ko",\n/' modules.bzl
+            if grep -qF '"net/ipv4/tcp_bic.ko"' modules.bzl; then
+              echo "Declared tcp_bic/tcp_htcp/tcp_westwood in modules.bzl"
+            else
+              echo "::error::Failed to declare BBRv3 TCP CC modules in modules.bzl"
+              exit 1
+            fi
           fi
 
           echo "BBRv3 enabled."
