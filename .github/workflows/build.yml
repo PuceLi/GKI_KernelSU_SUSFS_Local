@@ -976,6 +976,19 @@ jobs:
             && sed -i 's/^CONFIG_TCP_CONG_BBR3=.*/CONFIG_TCP_CONG_BBR3=y/' arch/arm64/configs/gki_defconfig \
             || echo 'CONFIG_TCP_CONG_BBR3=y' >> arch/arm64/configs/gki_defconfig
 
+          # Enabling TCP_CONG_ADVANCED also exposes the sibling congestion control
+          # algorithms (tcp_bic/htcp/westwood), which in the effective GKI config
+          # default to the CUBIC value (m) and get built as .ko. Kleaf/Bazel
+          # hard-fails the build when a module is built but not declared in the
+          # kernel_build module_outs list ("kernel modules are built but not
+          # copied"). Declare them so they are packaged instead of aborting.
+          if grep -qF '"net/ipv4/tcp_bic.ko"' BUILD.bazel; then
+            echo "module_outs already declares BBRv3 TCP CC modules"
+          else
+            perl -0pi -e 's/(module_outs = \[)/$1\n        "net\/ipv4\/tcp_bic.ko",\n        "net\/ipv4\/tcp_htcp.ko",\n        "net\/ipv4\/tcp_westwood.ko",/' BUILD.bazel
+            echo "Declared tcp_bic/tcp_htcp/tcp_westwood in BUILD.bazel module_outs"
+          fi
+
           echo "BBRv3 enabled."
 
       - name: Apply NoMount patch
