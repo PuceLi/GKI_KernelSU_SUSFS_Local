@@ -333,6 +333,39 @@ jobs:
             echo "CONFIG_KSU_SUSFS=n" >> ./arch/arm64/configs/$DEFCONFIG
           fi
 
+      - name: Enable syscall tracepoints for the nomount hook path
+        if: inputs.mount_hiding == 'nomount' && inputs.codename == 'tegu'
+        run: |
+          echo "Changing to configuration directory: $CONFIG..."
+          cd "$CONFIG"
+
+          # ReSukiSU selects the KernelSU hooking method via a Kconfig choice
+          # (drivers/kernelsu/Kconfig). With mount_hiding=susfs the choice is
+          # forced to KSU_SUSFS (inline hook) and the tracepoint files are never
+          # compiled. Without SUSFS (nomount) the choice falls back to the default
+          # KSU_TRACEPOINT_HOOK, which builds hook/syscall_hook_manager.o. That
+          # file calls register_trace_prio_sys_enter() under
+          # CONFIG_HAVE_SYSCALL_TRACEPOINTS (always on for arm64), but the symbol
+          # is only emitted when CONFIG_FTRACE_SYSCALLS=y. The tegu
+          # zumapro_defconfig leaves it off, so vmlinux failed to link with an
+          # undefined reference.
+          #
+          # KSU_MANUAL_HOOK is not a viable alternative here: ReSukiSU's
+          # tools/manual_hook_check.mk hard-requires ksu_handle_execveat (fs/exec.c),
+          # ksu_handle_faccessat (fs/open.c), ksu_handle_stat/ksu_handle_newfstat_ret/
+          # ksu_handle_fstat64_ret (fs/stat.c) and ksu_handle_sys_reboot
+          # (kernel/reboot.c) hand-patched into the kernel source; the AUTO LSM
+          # options only cover setuid/initrc/input. Sultan's GKI 6.1 source has
+          # none of these, so manual mode would fail its own compile-time check.
+          #
+          # FTRACE_SYSCALLS is therefore the intended path for nomount. In this
+          # tree it depends on nothing beyond HAVE_SYSCALL_TRACEPOINTS and selects
+          # GENERIC_TRACER -> TRACING -> TRACEPOINTS (+KALLSYMS), so it survives
+          # olddefconfig. NOTE FOR PR: this pulls the syscall tracing infrastructure
+          # into the kernel and widens the detectable surface; the susfs path keeps
+          # the inline hook and is unaffected. Scoped to tegu.
+          echo "CONFIG_FTRACE_SYSCALLS=y" >> ./arch/arm64/configs/$DEFCONFIG
+
       - name: Configure Mountify Support
         if: matrix.features == 'wksu-susfs'
         run: |
@@ -533,17 +566,53 @@ jobs:
               6.1.157-android14-11-geadf9a793a097-ab10025877-4k) echo "vermagic suffix OK" ;;
               *) echo "::error::kernel.release '$RELEASE' does not match stock tegu suffix" >&2; exit 1 ;;
             esac
-            # Vermagic flags must also match the stock modules (SMP preempt
-            # mod_unload modversions). The string is a compile-time literal in
-            # the image, so grep the raw bytes for the flags CONFIG_MODULE_UNLOAD
-            # and CONFIG_MODVERSIONS contribute.
-            lz4 -d -f out/arch/arm64/boot/Image.lz4 /tmp/Image 2>/dev/null || true
-            if ! grep -aq 'mod_unload' /tmp/Image || ! grep -aq 'modversions' /tmp/Image; then
-              echo "::error::kernel Image lacks vermagic flags 'mod_unload modversions' (CONFIG_MODULE_UNLOAD/CONFIG_MODVERSIONS not effective)" >&2
-              exit 1
-            fi
-            echo "vermagic flags OK"
+            # TEMP (vermagic-debug): the vermagic-flags grep below was moved out of
+            # this step into the "Verify vermagic flags" step, so the diagnostic
+            # step can run BEFORE it and capture why extraction/grep fails.
           fi
+
+      - name: "TEMP vermagic-debug: inspect extraction before flags grep"
+        if: inputs.codename == 'tegu'
+        shell: bash -x {0}
+        run: |
+          cd "$CONFIG"
+          echo "=== env texture ==="
+          pwd
+          echo "KBUILD_OUTPUT=[$KBUILD_OUTPUT]"
+          echo "CONFIG=[$CONFIG]"
+          echo "--- files right before decompression ---"
+          ls -la out/arch/arm64/boot/Image.lz4 out/arch/arm64/boot/Image 2>&1 || true
+          echo "kernel.release: $(cat out/include/config/kernel.release 2>&1 || true)"
+          echo "--- decompress Image.lz4 -> /tmp/Image (full stderr) ---"
+          lz4 -d -f out/arch/arm64/boot/Image.lz4 /tmp/Image 2>&1
+          echo "lz4 rc=$?"
+          echo "--- extracted stream ---"
+          wc -c < /tmp/Image 2>&1 || true
+          ls -la /tmp/Image 2>&1 || true
+          echo "--- vermagic string pulled from extracted Image ---"
+          V=$(strings -a /tmp/Image 2>/dev/null | grep -m1 '^6\.1\.157-android14-11' || true)
+          echo "string length: $(echo -n "$V" | wc -c)"
+          echo "first 200 chars: ${V:0:200}"
+          echo "--- raw grep on extracted Image (same flags the real check uses) ---"
+          if grep -aq 'mod_unload' /tmp/Image; then echo "grep mod_unload: FOUND"; else echo "grep mod_unload: MISSING"; fi
+          if grep -aq 'modversions' /tmp/Image; then echo "grep modversions: FOUND"; else echo "grep modversions: MISSING"; fi
+
+      - name: Verify vermagic flags (moved out of Build so diagnostics run first)
+        if: inputs.codename == 'tegu'
+        run: |
+          echo "Changing to configuration directory: $CONFIG..."
+          cd "$CONFIG"
+
+          # Vermagic flags must match the stock modules (SMP preempt
+          # mod_unload modversions). The string is a compile-time literal in
+          # the image, so grep the raw bytes for the flags CONFIG_MODULE_UNLOAD
+          # and CONFIG_MODVERSIONS contribute.
+          lz4 -d -f out/arch/arm64/boot/Image.lz4 /tmp/Image 2>/dev/null || true
+          if ! grep -aq 'mod_unload' /tmp/Image || ! grep -aq 'modversions' /tmp/Image; then
+            echo "::error::kernel Image lacks vermagic flags 'mod_unload modversions' (CONFIG_MODULE_UNLOAD/CONFIG_MODVERSIONS not effective)" >&2
+            exit 1
+          fi
+          echo "vermagic flags OK"
 
       - name: Copy Images
         run: |
