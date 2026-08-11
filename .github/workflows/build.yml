@@ -64,6 +64,14 @@ on:
         required: true
         type: boolean
         default: true
+      enable_nomount:
+        required: false
+        type: boolean
+        default: false
+      use_bbrv3:
+        required: false
+        type: boolean
+        default: false
       supp_op:
         required: false
         type: boolean
@@ -105,6 +113,8 @@ jobs:
           echo "KSU variant      : ${{ inputs.ksu_variant }}"
           echo "Build time       : ${{ inputs.build_time }}"
           echo "SUSFS enabled    : ${{ inputs.enable_susfs }}"
+          echo "NoMount enabled  : ${{ inputs.enable_nomount }}"
+          echo "BBRv3 enabled    : ${{ inputs.use_bbrv3 }}"
           echo "ZRAM boost       : ${{ inputs.use_zram }}"
           echo "BBG patch        : ${{ inputs.use_bbg }}"
           echo "KPM support      : ${{ inputs.use_kpm }}"
@@ -942,6 +952,55 @@ jobs:
               fi
             fi
           fi
+
+      - name: Apply BBRv3 patch
+        if: inputs.use_bbrv3
+        working-directory: ${{ env.KERNEL_ROOT }}/common
+        run: |
+          echo "Applying BBRv3 TCP congestion control backport (android14-6.1)..."
+          if [[ "${{ inputs.android_version }}" == "android14" && "${{ inputs.kernel_version }}" == "6.1" ]]; then
+            PATCH="$GITHUB_WORKSPACE/.github/patches/bbrv3/0001-net-tcp-backport-BBRv3-to-android14-6.1.patch"
+          else
+            echo "::warning::BBRv3 is only available for android14-6.1 in this repo; skipping."
+            exit 0
+          fi
+
+          patch -p1 --fuzz=0 < "$PATCH" || { echo "::error::BBRv3 patch failed to apply"; exit 1; }
+
+          # BBRv3 needs CONFIG_TCP_CONG_ADVANCED + CONFIG_TCP_CONG_BBR3 (same flags
+          # the upstream WildKernels bbrv3 action sets in gki_defconfig).
+          grep -q '^CONFIG_TCP_CONG_ADVANCED=' arch/arm64/configs/gki_defconfig \
+            && sed -i 's/^CONFIG_TCP_CONG_ADVANCED=.*/CONFIG_TCP_CONG_ADVANCED=y/' arch/arm64/configs/gki_defconfig \
+            || echo 'CONFIG_TCP_CONG_ADVANCED=y' >> arch/arm64/configs/gki_defconfig
+          grep -q '^CONFIG_TCP_CONG_BBR3=' arch/arm64/configs/gki_defconfig \
+            && sed -i 's/^CONFIG_TCP_CONG_BBR3=.*/CONFIG_TCP_CONG_BBR3=y/' arch/arm64/configs/gki_defconfig \
+            || echo 'CONFIG_TCP_CONG_BBR3=y' >> arch/arm64/configs/gki_defconfig
+
+          echo "BBRv3 enabled."
+
+      - name: Apply NoMount patch
+        if: inputs.enable_nomount
+        working-directory: ${{ env.KERNEL_ROOT }}/common
+        run: |
+          echo "Applying NoMount (nomount) path redirection subsystem..."
+          if [[ "${{ inputs.enable_susfs }}" == "true" ]]; then
+            echo "::error::enable_nomount and enable_susfs are mutually exclusive: SUSFS and NoMount hook the same VFS functions. Pass a single mount hiding engine."
+            exit 1
+          fi
+          case "${{ inputs.kernel_version }}" in
+            5.10) NOMOUNT_PATCH="$GITHUB_WORKSPACE/.github/patches/nomount/nomount_5.10_kernel_integration.patch" ;;
+            5.15) NOMOUNT_PATCH="$GITHUB_WORKSPACE/.github/patches/nomount/nomount_5.15_kernel_integration.patch" ;;
+            6.1)  NOMOUNT_PATCH="$GITHUB_WORKSPACE/.github/patches/nomount/nomount_6.1_kernel_integration.patch" ;;
+            6.6)  NOMOUNT_PATCH="$GITHUB_WORKSPACE/.github/patches/nomount/nomount_6.6_kernel_integration.patch" ;;
+            6.12) NOMOUNT_PATCH="$GITHUB_WORKSPACE/.github/patches/nomount/nomount_6.12_kernel_integration.patch" ;;
+            *) echo "::error::NoMount: no nomount_${{ inputs.kernel_version }}_kernel_integration.patch"; exit 1 ;;
+          esac
+
+          patch -p1 --fuzz=0 < "$NOMOUNT_PATCH" || { echo "::error::NoMount patch failed to apply"; exit 1; }
+          cp $GITHUB_WORKSPACE/.github/patches/nomount/src/nomount.c ./fs/
+          cp $GITHUB_WORKSPACE/.github/patches/nomount/src/nomount.h ./fs/
+          echo "CONFIG_NOMOUNT=y" >> arch/arm64/configs/gki_defconfig
+          echo "NoMount enabled."
 
       - name: Clone Droidspaces patch repository
         if: inputs.droidspaces != 'off'

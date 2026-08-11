@@ -94,6 +94,20 @@ on:
         required: true
         type: boolean
         default: false
+      use_bbrv3:
+        description: "Enable BBRv3 TCP congestion control backport (android14-6.1; GKI common path only, warning no-op on Sultan path)"
+        required: false
+        type: boolean
+        default: false
+      mount_hiding:
+        description: "Mount hiding engine"
+        required: false
+        type: choice
+        options:
+          - "susfs"
+          - "nomount"
+          - "none"
+        default: "susfs"
   workflow_call:
     inputs:
       kernel_source:
@@ -147,6 +161,14 @@ on:
         required: false
         type: boolean
         default: false
+      use_bbrv3:
+        required: false
+        type: boolean
+        default: false
+      mount_hiding:
+        required: false
+        type: string
+        default: "susfs"
 
 jobs:
   build-kernels-a14-6-1:
@@ -180,7 +202,9 @@ jobs:
       use_rekernel: ${{ inputs.use_rekernel || false }}
       cve_2026_43499_patch: ${{ inputs.cve_2026_43499_patch }}
       supp_op: false
-      enable_susfs: ${{ !inputs.cancel_susfs }}
+      enable_susfs: ${{ inputs.mount_hiding == 'susfs' && !inputs.cancel_susfs }}
+      enable_nomount: ${{ inputs.mount_hiding == 'nomount' }}
+      use_bbrv3: ${{ inputs.use_bbrv3 }}
       droidspaces: ${{ inputs.droidspaces || 'off' }}
       droidspaces_ntsync: ${{ inputs.droidspaces_ntsync || false }}
       artifact_upload_mode: ${{ inputs.artifact_upload_mode }}
@@ -202,6 +226,8 @@ jobs:
       ksu_variant: ${{ inputs.kernelsu_variant }}
       use_bbg: ${{ inputs.use_bbg }}
       droidspaces_ntsync: ${{ inputs.droidspaces_ntsync || false }}
+      mount_hiding: ${{ inputs.mount_hiding || 'susfs' }}
+      use_bbrv3: ${{ inputs.use_bbrv3 }}
 
   # Pixel 9a (tegu): built from etnperlong's Sultan-based tegu port (6.1.157) via
   # the same sultan.yml pipeline. tegu's vendor_kernel_boot dtb payload is the same
@@ -222,6 +248,8 @@ jobs:
       ksu_variant: ${{ inputs.kernelsu_variant }}
       use_bbg: ${{ inputs.use_bbg }}
       droidspaces_ntsync: ${{ inputs.droidspaces_ntsync || false }}
+      mount_hiding: ${{ inputs.mount_hiding || 'susfs' }}
+      use_bbrv3: ${{ inputs.use_bbrv3 }}
 
   # Only runs on direct trigger, skipped when called from main.yml.
   # Runs for both Original and Sultan builds -- get-manager.yml handles the

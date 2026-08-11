@@ -100,6 +100,18 @@ on:
         description: "Disable SUSFS"
         type: boolean
         default: false
+      use_bbrv3:
+        description: "Enable BBRv3 TCP congestion control backport (Android 14 - 6.1 build; GKI common path only, warning no-op on Sultan path)"
+        type: boolean
+        default: false
+      mount_hiding:
+        description: "Mount hiding engine (SUSFS / NoMount / none) for Android 14 - 6.1 builds"
+        type: choice
+        options:
+          - "susfs"
+          - "nomount"
+          - "none"
+        default: "susfs"
 
       # ==================== Build version selection ====================
       build_a12_5_10:
@@ -191,6 +203,8 @@ jobs:
       use_rekernel: ${{ inputs.use_rekernel }}
       cve_2026_43499_patch: ${{ inputs.cve_2026_43499_patch }}
       cancel_susfs: ${{ inputs.cancel_susfs }}
+      use_bbrv3: ${{ inputs.use_bbrv3 }}
+      mount_hiding: ${{ inputs.mount_hiding }}
       droidspaces: ${{ inputs.droidspaces }}
       artifact_upload_mode: "Upload all"
       droidspaces_ntsync: ${{ inputs.droidspaces_ntsync }}

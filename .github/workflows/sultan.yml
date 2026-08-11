@@ -30,6 +30,16 @@ on:
         required: false
         type: boolean
         default: false
+      mount_hiding:
+        description: "Mount hiding engine. 'susfs' (default) applies SUSFS hooks; 'nomount' applies the NoMount path-redirection subsystem instead (mutually exclusive with SUSFS); 'none' disables mount hiding."
+        required: false
+        type: string
+        default: "susfs"
+      use_bbrv3:
+        description: "Enable the BBRv3 TCP congestion control backport. Only valid on the GKI common base; the Sultan tegu/zumapro tree has diverged (see bbrv3-source.md) so this is a documented no-op that logs a warning."
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build-kernel:
@@ -241,7 +251,7 @@ jobs:
           patch -p1 --fuzz=0 < $GITHUB_WORKSPACE/.github/patches/sultan/sultan-resukisu-selinux-export.patch
 
       - name: Apply SUSFS Kernel Patches
-        if: contains(matrix.features, 'susfs')
+        if: contains(matrix.features, 'susfs') && inputs.mount_hiding == 'susfs'
         run: |
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
@@ -263,6 +273,32 @@ jobs:
             patch -p1 --fuzz=0 < ksun-293ca01-susfs-v2.1.0-a14-6.1-ef16cbce.patch
             cd ..
           fi
+
+      - name: Apply NoMount (nomount) path redirection patches
+        if: inputs.mount_hiding == 'nomount'
+        run: |
+          echo "Applying NoMount (nomount) path redirection subsystem..."
+          cd "$CONFIG"
+
+          # Sultan tegu/zumapro base (6.1.157) diverged from GKI common in
+          # fs/proc/task_mmu.c (Sultan's show_vma_header_prefix differs), so the
+          # stock 6.1 integration patch fails one hunk there. The tegu variant
+          # fixes that hunk; verified clean with patch -p1 --fuzz=0.
+          patch -p1 --fuzz=0 < $GITHUB_WORKSPACE/.github/patches/sultan/sultan-nomount-a14-6.1-tegu.patch
+          cp $GITHUB_WORKSPACE/.github/patches/nomount/src/nomount.c ./fs/
+          cp $GITHUB_WORKSPACE/.github/patches/nomount/src/nomount.h ./fs/
+          echo "CONFIG_NOMOUNT=y" >> ./arch/arm64/configs/$DEFCONFIG
+          echo "NoMount enabled."
+
+      - name: BBRv3 (unsupported on Sultan base - documented no-op)
+        if: inputs.use_bbrv3
+        run: |
+          # The BBRv3 android14-6.1 backport targets GKI common. The Sultan
+          # tegu/zumapro base (6.1.157) has diverged: Sultan already backported
+          # TCP PLB (net/ipv4/tcp_plb.c present) and fully rewrote tcp_output.c,
+          # so the patch does not apply (see bbrv3-source.md). Log a warning and
+          # skip rather than fail the build.
+          echo "::warning::use_bbrv3 was requested, but the Sultan tegu/zumapro base has diverged from GKI android14-6.1 common. BBRv3 patch does not apply (tcp_output.c rewritten by Sultan, PLB already backported). See bbrv3-source.md. Skipping BBRv3 for this build."
 
       - name: Apply Droidspaces Patches
         if: contains(matrix.features, 'susfs')
@@ -291,7 +327,7 @@ jobs:
           # KernelSU Configuration
           echo "# KernelSU Configuration" >> ./arch/arm64/configs/$DEFCONFIG
           echo "CONFIG_KSU=y" >> ./arch/arm64/configs/$DEFCONFIG
-          if [[ "${{ matrix.features }}" == *"susfs"* ]]; then
+          if [[ "${{ matrix.features }}" == *"susfs"* && "${{ inputs.mount_hiding }}" == "susfs" ]]; then
             echo "CONFIG_KSU_SUSFS=y" >> ./arch/arm64/configs/$DEFCONFIG
           else
             echo "CONFIG_KSU_SUSFS=n" >> ./arch/arm64/configs/$DEFCONFIG
