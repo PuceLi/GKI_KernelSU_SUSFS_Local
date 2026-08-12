@@ -9,6 +9,11 @@ on:
       kernelsu_variant:
         required: true
         type: string
+      mount_hiding:
+        description: "Mount hiding engine: susfs / nomount / none. Determines which companion module to attach."
+        required: false
+        type: string
+        default: "susfs"
     outputs:
       susVer:
         description: "The fetched SUSFS version number"
@@ -298,6 +303,7 @@ jobs:
 
       - name: 添加 SUSFS 模块
         id: add_SUSFS
+        if: inputs.mount_hiding == 'susfs'
         continue-on-error: true
         run: |
           case "${{ inputs.kernelsu_variant }}" in
@@ -350,6 +356,49 @@ jobs:
           cd ..
           rm -rf susfs-temp "$NAME"
 
+      - name: 添加 NoMount 模块
+        id: add_nomount
+        if: inputs.mount_hiding == 'nomount'
+        continue-on-error: true
+        run: |
+          echo "下载 NoMount 模块 (latest CI from maxsteeel/nomount)..."
+          BUILD_ID=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/maxsteeel/nomount/actions/runs?status=success&per_page=1" |
+          jq -r '.workflow_runs[0].id')
+
+          if [ -z "$BUILD_ID" ] || [ "$BUILD_ID" == "null" ]; then
+            echo "::warning::NoMount module CI run not found, skipping module attachment"
+            exit 0
+          fi
+
+          ARTIFACTS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/maxsteeel/nomount/actions/runs/$BUILD_ID/artifacts")
+
+          DOWNLOAD_URL=$(echo "$ARTIFACTS" | jq -r '.artifacts[0].archive_download_url')
+          NAME=$(echo "$ARTIFACTS" | jq -r '.artifacts[0].name')
+
+          if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" == "null" ] || [ -z "$NAME" ] || [ "$NAME" == "null" ]; then
+            echo "::warning::NoMount module artifact not found, skipping"
+            exit 0
+          fi
+
+          echo "NOMOUNT_NAME=$NAME" >> $GITHUB_ENV
+
+          ZIP_NAME="nomount-$NAME.zip"
+          curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o "$ZIP_NAME" "$DOWNLOAD_URL"
+          echo "$ZIP_NAME downloaded"
+
+          mkdir -p nomount-module
+          unzip "$ZIP_NAME" -d nomount-temp
+          cd nomount-temp
+          if ls *.zip 1>/dev/null 2>&1; then
+            mv *.zip ../nomount-module/
+          else
+            zip -r "../nomount-module/ksu_module_nomount.zip" .
+          fi
+          cd ..
+          rm -rf nomount-temp "$ZIP_NAME"
+
       - name: Notify on failure
         if: steps.add_KSU.outcome == 'failure'
         run: echo "下载CI构建的KSU失败!"
@@ -368,3 +417,10 @@ jobs:
         with:
           name: susfs-${{ env.SUSFS_NAME }}
           path: ./susfs-module/*
+
+      - name: 上传NoMount模块
+        if: steps.add_nomount.outcome == 'success'
+        uses: actions/upload-artifact@v6
+        with:
+          name: nomount-${{ env.NOMOUNT_NAME }}
+          path: ./nomount-module/*

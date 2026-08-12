@@ -147,6 +147,7 @@ jobs:
     secrets: inherit
     with:
       kernelsu_variant: ${{ inputs.kernelsu_variant }}
+      mount_hiding: ${{ inputs.mount_hiding }}
 
   # ==================== Android 12 - 5.10 build ====================
   build-a12-5-10:
@@ -624,19 +625,25 @@ jobs:
             $PRERELEASE_FLAG
 
       # ==================== Upload manager and modules ====================
-      - name: Upload manager and SUSFS module
+      - name: Upload manager and mount-hiding modules
         continue-on-error: true
         run: |
-          echo "Preparing to upload APK and SUSFS module..."
+          echo "Preparing to upload APK and mount-hiding modules..."
           apk_count=$(find ./downloaded-artifacts -type f -name "*.apk" | wc -l || true)
           sus_count=$(find ./downloaded-artifacts -type f -path "./downloaded-artifacts/susfs-*/*" | wc -l || true)
+          nomount_count=$(find ./downloaded-artifacts -type f -path "./downloaded-artifacts/nomount-*/*" | wc -l || true)
           echo "APK files: ${apk_count}"
           echo "SUSFS files: ${sus_count}"
+          echo "NoMount files: ${nomount_count}"
           find ./downloaded-artifacts -type f -name "*.apk" -print0 | \
           while IFS= read -r -d '' f; do
             gh release upload "$NEW_TAG" "$f" || true
           done
           find ./downloaded-artifacts -type f -path "./downloaded-artifacts/susfs-*/*" -print0 | \
+          while IFS= read -r -d '' f; do
+            gh release upload "$NEW_TAG" "$f" || true
+          done
+          find ./downloaded-artifacts -type f -path "./downloaded-artifacts/nomount-*/*" -print0 | \
           while IFS= read -r -d '' f; do
             gh release upload "$NEW_TAG" "$f" || true
           done

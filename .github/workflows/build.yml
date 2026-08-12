@@ -1024,6 +1024,17 @@ jobs:
           echo "CONFIG_NOMOUNT=y" >> arch/arm64/configs/gki_defconfig
           echo "NoMount enabled."
 
+      - name: Apply binder async free race defensive fix
+        working-directory: ${{ env.KERNEL_ROOT }}/common
+        run: |
+          echo "Applying binder async free race defensive fix..."
+          # Replaces BUG_ON(!has_async_transaction) in binder_free_buf with
+          # a defensive check. Prevents kernel panic triggered by HMA-OSS
+          # (or any heavy oneway binder traffic) hitting the async transaction
+          # accounting race. Unfixed upstream in all android14-6.1 branches.
+          patch -p1 --fuzz=0 < $GITHUB_WORKSPACE/.github/patches/binder/binder_async_free_race_defensive.patch
+          echo "Binder async race fix applied."
+
       - name: Clone Droidspaces patch repository
         if: inputs.droidspaces != 'off'
         run: |

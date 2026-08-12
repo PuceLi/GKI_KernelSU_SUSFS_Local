@@ -260,3 +260,4 @@ jobs:
     secrets: inherit
     with:
       kernelsu_variant: ${{ inputs.kernelsu_variant }}
+      mount_hiding: ${{ inputs.mount_hiding }}

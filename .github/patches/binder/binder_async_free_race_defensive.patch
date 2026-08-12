@@ -1,0 +1,46 @@
+--- a/drivers/android/binder.c
++++ b/drivers/android/binder.c
+@@ -4252,20 +4252,31 @@
+ 
+ 		buf_node = buffer->target_node;
+ 		binder_node_inner_lock(buf_node);
+-		BUG_ON(!buf_node->has_async_transaction);
+-		BUG_ON(buf_node->proc != proc);
+-		w = binder_dequeue_work_head_ilocked(
+-				&buf_node->async_todo);
+-		if (!w) {
+-			buf_node->has_async_transaction = false;
++		if (!buf_node->has_async_transaction ||
++		    buf_node->proc != proc) {
++			/*
++			 * Defensive: a race between async transaction
++			 * delivery/free and node release/freeze can leave
++			 * the flag cleared or the node moved to another
++			 * proc while a delivered async buffer is still
++			 * being freed via BC_FREE_BUFFER. Skip the
++			 * async_todo dequeue instead of crashing.
++			 */
++			binder_node_inner_unlock(buf_node);
+ 		} else {
+-			trace_android_vh_binder_special_task(NULL, proc, thread, w,
+-				&proc->todo, false, &enqueue_task);
+-			if (enqueue_task)
+-				binder_enqueue_work_ilocked(w, &proc->todo);
+-			binder_wakeup_proc_ilocked(proc);
++			w = binder_dequeue_work_head_ilocked(
++					&buf_node->async_todo);
++			if (!w) {
++				buf_node->has_async_transaction = false;
++			} else {
++				trace_android_vh_binder_special_task(NULL, proc, thread, w,
++					&proc->todo, false, &enqueue_task);
++				if (enqueue_task)
++					binder_enqueue_work_ilocked(w, &proc->todo);
++				binder_wakeup_proc_ilocked(proc);
++			}
++			binder_node_inner_unlock(buf_node);
+ 		}
+-		binder_node_inner_unlock(buf_node);
+ 	}
+ 	trace_android_vh_binder_buffer_release(proc, thread, buffer,
+ 			has_transaction);

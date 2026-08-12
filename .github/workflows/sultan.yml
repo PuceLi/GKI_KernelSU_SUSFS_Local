@@ -300,6 +300,17 @@ jobs:
           # skip rather than fail the build.
           echo "::warning::use_bbrv3 was requested, but the Sultan tegu/zumapro base has diverged from GKI android14-6.1 common. BBRv3 patch does not apply (tcp_output.c rewritten by Sultan, PLB already backported). See bbrv3-source.md. Skipping BBRv3 for this build."
 
+      - name: Apply binder async free race defensive fix
+        run: |
+          echo "Applying binder async free race defensive fix..."
+          cd "$CONFIG"
+          # Replaces BUG_ON(!has_async_transaction) in binder_free_buf with
+          # a defensive check. Prevents kernel panic triggered by HMA-OSS
+          # (or any heavy oneway binder traffic) hitting the async transaction
+          # accounting race. Unfixed upstream in all android14-6.1 branches.
+          patch -p1 --fuzz=0 < $GITHUB_WORKSPACE/.github/patches/binder/binder_async_free_race_defensive.patch
+          echo "Binder async race fix applied."
+
       - name: Apply Droidspaces Patches
         if: contains(matrix.features, 'susfs')
         run: |
