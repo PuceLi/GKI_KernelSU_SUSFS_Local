@@ -280,14 +280,17 @@ jobs:
           echo "Applying NoMount (nomount) path redirection subsystem..."
           cd "$CONFIG"
 
-          # Sultan tegu/zumapro base (6.1.157) diverged from GKI common in
-          # fs/proc/task_mmu.c (Sultan's show_vma_header_prefix differs), so the
-          # stock 6.1 integration patch fails one hunk there. The tegu variant
-          # fixes that hunk; verified clean with patch -p1 --fuzz=0.
-          patch -p1 --fuzz=0 < $GITHUB_WORKSPACE/.github/patches/sultan/sultan-nomount-a14-6.1-tegu.patch
-          cp $GITHUB_WORKSPACE/.github/patches/nomount/src/nomount.c ./fs/
-          cp $GITHUB_WORKSPACE/.github/patches/nomount/src/nomount.h ./fs/
+          # NoMount >= v12 is fully self-contained (hijacks dentry/inode/file
+          # ops internally, key-based add_key transport): only fs/Kconfig +
+          # fs/Makefile need the hook-up, no fs/*.c edits required anymore.
+          patch -p1 --fuzz=0 < $GITHUB_WORKSPACE/.github/patches/nomount/nomount_6.1_kernel_integration.patch
+          mkdir -p ./fs/nomount
+          cp $GITHUB_WORKSPACE/.github/patches/nomount/src/nomount.c ./fs/nomount/
+          cp $GITHUB_WORKSPACE/.github/patches/nomount/src/nomount.h ./fs/nomount/
+          cp $GITHUB_WORKSPACE/.github/patches/nomount/src/Kconfig ./fs/nomount/
+          cp $GITHUB_WORKSPACE/.github/patches/nomount/src/Makefile ./fs/nomount/
           echo "CONFIG_NOMOUNT=y" >> ./arch/arm64/configs/$DEFCONFIG
+          echo "CONFIG_KEYS=y" >> ./arch/arm64/configs/$DEFCONFIG
           echo "NoMount enabled."
 
       - name: BBRv3 (unsupported on Sultan base - documented no-op)

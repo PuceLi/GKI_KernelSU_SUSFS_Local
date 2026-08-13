@@ -1019,9 +1019,13 @@ jobs:
           esac
 
           patch -p1 --fuzz=0 < "$NOMOUNT_PATCH" || { echo "::error::NoMount patch failed to apply"; exit 1; }
-          cp $GITHUB_WORKSPACE/.github/patches/nomount/src/nomount.c ./fs/
-          cp $GITHUB_WORKSPACE/.github/patches/nomount/src/nomount.h ./fs/
+          mkdir -p ./fs/nomount
+          cp $GITHUB_WORKSPACE/.github/patches/nomount/src/nomount.c ./fs/nomount/
+          cp $GITHUB_WORKSPACE/.github/patches/nomount/src/nomount.h ./fs/nomount/
+          cp $GITHUB_WORKSPACE/.github/patches/nomount/src/Kconfig ./fs/nomount/
+          cp $GITHUB_WORKSPACE/.github/patches/nomount/src/Makefile ./fs/nomount/
           echo "CONFIG_NOMOUNT=y" >> arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KEYS=y" >> arch/arm64/configs/gki_defconfig
           echo "NoMount enabled."
 
       - name: Apply binder async free race defensive fix
