@@ -1515,34 +1515,34 @@ jobs:
           fi
 
           # 生成配置信息摘要
-          cat > "kernel-configs/README.md" << 'EOF'
-# 内核配置文件说明
+          cat > "kernel-configs/README.md" <<'HEREDOC_EOF'
+          # 内核配置文件说明
 
-本目录包含以下配置文件：
+          本目录包含以下配置文件：
 
-- **original_defconfig**: 构建前的原始 GKI defconfig
-- **final_defconfig**: 构建时实际使用的最终 defconfig（包含所有修改）
-- **config_diff.txt**: 原始配置与最终配置的差异
-EOF
+          - **original_defconfig**: 构建前的原始 GKI defconfig
+          - **final_defconfig**: 构建时实际使用的最终 defconfig（包含所有修改）
+          - **config_diff.txt**: 原始配置与最终配置的差异
+          HEREDOC_EOF
 
           if [ "${{ inputs.use_custom_defconfig }}" = "true" ]; then
-            cat >> "kernel-configs/README.md" << 'EOF'
-- **custom_config**: 用户提供的自定义配置文件
+            cat >> "kernel-configs/README.md" <<'HEREDOC_EOF'
+          - **custom_config**: 用户提供的自定义配置文件
 
-## 自定义配置说明
-本次构建使用了自定义内核配置，路径: ${{ inputs.custom_defconfig_path }}
-EOF
+          ## 自定义配置说明
+          本次构建使用了自定义内核配置，路径: ${{ inputs.custom_defconfig_path }}
+          HEREDOC_EOF
           fi
 
-          cat >> "kernel-configs/README.md" << EOF
+          cat >> "kernel-configs/README.md" <<HEREDOC_EOF
 
-## 构建信息
-- Android 版本: ${{ inputs.android_version }}
-- 内核版本: ${{ inputs.kernel_version }}.${{ inputs.sub_level }}
-- 安全补丁: ${{ inputs.os_patch_level }}
-- KSU 变体: ${{ inputs.ksu_variant }}
-- 构建时间: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
-EOF
+          ## 构建信息
+          - Android 版本: ${{ inputs.android_version }}
+          - 内核版本: ${{ inputs.kernel_version }}.${{ inputs.sub_level }}
+          - 安全补丁: ${{ inputs.os_patch_level }}
+          - KSU 变体: ${{ inputs.ksu_variant }}
+          - 构建时间: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          HEREDOC_EOF
 
           echo "内核配置文件准备完成"
           ls -lh kernel-configs/
