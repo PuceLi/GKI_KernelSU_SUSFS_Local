@@ -421,11 +421,8 @@ jobs:
               BRANCH="-s main"
               ;;
             "SukiSU")
-              if [ "${{ inputs.enable_susfs }}" = "false" ]; then
-                BRANCH="-s main"
-              else
-                BRANCH="-s builtin"
-              fi
+              # 强制使用 main 分支，builtin 分支存在 su 命令不可用的问题
+              BRANCH="-s main"
               ;;
             "Next")
               BRANCH=""

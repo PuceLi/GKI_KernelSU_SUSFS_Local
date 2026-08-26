@@ -37,6 +37,14 @@ on:
           - SukiSU(40548)
           - ReSukiSU
         default: ReSukiSU
+      sukisu_branch:
+        description: "SukiSU 分支选择 (仅 SukiSU 生效)"
+        required: false
+        type: choice
+        options:
+          - "main (推荐，终端 su 可用)"
+          - "builtin (内置 SUSFS，终端 su 不可用)"
+        default: "main (推荐，终端 su 可用)"
 
       # ==================== SUSFS 自定义配置 ====================
       susfs_repo_url:
@@ -101,6 +109,7 @@ on:
           - "仅上传 AnyKernel3.zip"
           - "上传全部"
           - "上传全部+内核配置"
+          - "配置文件+AnyKernel3"
         default: "上传全部+内核配置"
       droidspaces_ntsync:
         description: "启用 Droidspaces 容器 NTSync 支持（需启用 Droidspaces）"
@@ -227,6 +236,7 @@ jobs:
       os_patch_level: ${{ inputs.os_patch_level }}
       revision: "r1"
       ksu_variant: ${{ inputs.kernelsu_variant }}
+      sukisu_branch: ${{ inputs.sukisu_branch || 'main (推荐，终端 su 可用)' }}
       version: ${{ inputs.version || '' }}
       build_time: ${{ inputs.build_time || '' }}
       use_zram: ${{ inputs.use_zram }}

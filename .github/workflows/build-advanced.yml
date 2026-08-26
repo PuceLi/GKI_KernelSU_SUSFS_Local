@@ -25,6 +25,10 @@ on:
       ksu_variant:
         required: true
         type: string
+      sukisu_branch:
+        required: false
+        type: string
+        default: "main (推荐，终端 su 可用)"
 
       # ==================== 可选配置 ====================
       version:
@@ -121,6 +125,9 @@ jobs:
           echo "子版本号      : ${{ inputs.sub_level }}"
           echo "补丁级别      : ${{ inputs.os_patch_level }}"
           echo "KSU 变体      : ${{ inputs.ksu_variant }}"
+          if [ "${{ inputs.ksu_variant }}" = "SukiSU" ]; then
+            echo "SukiSU 分支   : ${{ inputs.sukisu_branch }}"
+          fi
           echo "构建时间      : ${{ inputs.build_time }}"
           echo "SUSFS 状态    : ${{ inputs.enable_susfs }}"
           echo "ZRAM 增强     : ${{ inputs.use_zram }}"
@@ -486,10 +493,14 @@ jobs:
               BRANCH="-s main"
               ;;
             "SukiSU")
-              if [ "${{ inputs.enable_susfs }}" = "false" ]; then
-                BRANCH="-s main"
-              else
+              # 根据用户选择使用 main 或 builtin 分支
+              SUKISU_BRANCH_INPUT="${{ inputs.sukisu_branch }}"
+              if [[ "$SUKISU_BRANCH_INPUT" == *"builtin"* ]]; then
                 BRANCH="-s builtin"
+                echo "⚠️  警告: builtin 分支可能导致终端 su 命令不可用"
+              else
+                BRANCH="-s main"
+                echo "✅  使用 main 分支，终端 su 命令可用"
               fi
               ;;
             "Next")
@@ -1211,7 +1222,7 @@ jobs:
           fi
 
       - name: 备份最终 defconfig（编译前）
-        if: inputs.artifact_upload_mode == '上传全部+内核配置'
+        if: inputs.artifact_upload_mode == '上传全部+内核配置' || inputs.artifact_upload_mode == '配置文件+AnyKernel3'
         run: |
           mkdir -p "$GITHUB_WORKSPACE/kernel-configs-backup"
 
@@ -1478,7 +1489,7 @@ jobs:
           fi
 
       - name: 准备内核配置文件
-        if: inputs.artifact_upload_mode == '上传全部+内核配置'
+        if: inputs.artifact_upload_mode == '上传全部+内核配置' || inputs.artifact_upload_mode == '配置文件+AnyKernel3'
         run: |
           mkdir -p kernel-configs
 
@@ -1547,12 +1558,31 @@ jobs:
           echo "内核配置文件准备完成"
           ls -lh kernel-configs/
 
+          # 为 "配置文件+AnyKernel3" 模式创建 zip
+          if [ "${{ inputs.artifact_upload_mode }}" = "配置文件+AnyKernel3" ]; then
+            CONFIG_ZIP_NAME="${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-kernel-configs.zip"
+            cd kernel-configs
+            zip -r "../$CONFIG_ZIP_NAME" ./*
+            cd ..
+            echo "已创建配置文件压缩包: $CONFIG_ZIP_NAME"
+          fi
+
       - name: 上传 AnyKernel3 刷入包
         if: inputs.artifact_upload_mode == '仅上传 AnyKernel3.zip'
         uses: actions/upload-artifact@v6
         with:
           name: ${{ inputs.ksu_variant }}_kernel-${{ env.CONFIG }}-AnyKernel3
           path: AnyKernel3/*
+          compression-level: 9
+
+      - name: 上传配置文件+AnyKernel3
+        if: inputs.artifact_upload_mode == '配置文件+AnyKernel3'
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ inputs.ksu_variant }}_kernel-${{ env.CONFIG }}
+          path: |
+            *AnyKernel3.zip
+            *kernel-configs.zip
           compression-level: 9
 
       - name: 上传全部构建产物
