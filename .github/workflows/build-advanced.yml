@@ -900,7 +900,7 @@ jobs:
 
           if [[ "${{ inputs.android_version }}" == "android15" && "${{ inputs.kernel_version }}" == "6.6" ]]; then
             # 1. 开启用户命名空间（必须）
-            # enable_config_if_defined CONFIG_USER_NS
+            enable_config_if_defined CONFIG_USER_NS
             # 2. 关闭安卓严格网络控制（必须）
             disable_config CONFIG_ANDROID_PARANOID_NETWORK
           fi
@@ -1452,7 +1452,7 @@ jobs:
           gzip -n -k -f -9 ./Image > ./Image.gz
 
       - name: 创建 AnyKernel3 压缩包
-        if: inputs.artifact_upload_mode == '上传全部' || inputs.artifact_upload_mode == '上传全部+内核配置'
+        if: inputs.artifact_upload_mode == '上传全部' || inputs.artifact_upload_mode == '上传全部+内核配置' || inputs.artifact_upload_mode == '配置文件+AnyKernel3'
         run: |
           cd "$ANYKERNEL3"
           ZIP_NAME="${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-AnyKernel3.zip"
