@@ -1,4 +1,4 @@
-name: 内核构建流程
+name: 高级内核构建流程
 
 permissions:
   contents: write
@@ -81,6 +81,24 @@ on:
         type: boolean
         default: false
 
+      # ==================== 高级自定义配置 ====================
+      susfs_repo_url:
+        required: false
+        type: string
+        default: ""
+      susfs_commit_id:
+        required: false
+        type: string
+        default: ""
+      use_custom_defconfig:
+        required: false
+        type: boolean
+        default: false
+      custom_defconfig_path:
+        required: false
+        type: string
+        default: ""
+
 jobs:
   build-kernel:
     name: "${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.android_version }}-${{ inputs.os_patch_level }}-${{ inputs.ksu_variant }}"
@@ -96,7 +114,7 @@ jobs:
       - name: 构建信息摘要
         run: |
           echo "========================================"
-          echo "       内核构建配置摘要"
+          echo "       高级内核构建配置摘要"
           echo "========================================"
           echo "Android 版本  : ${{ inputs.android_version }}"
           echo "内核版本      : ${{ inputs.kernel_version }}"
@@ -114,6 +132,23 @@ jobs:
           echo "NTSync        : ${{ inputs.droidspaces_ntsync }}"
           echo "产物上传模式  : ${{ inputs.artifact_upload_mode }}"
           echo "Stock Config  : 自动检测 config/stock_defconfig"
+          echo "========================================"
+          echo "       高级自定义配置"
+          echo "========================================"
+          if [ -n "${{ inputs.susfs_repo_url }}" ]; then
+            echo "自定义 SUSFS 仓库: ${{ inputs.susfs_repo_url }}"
+          else
+            echo "自定义 SUSFS 仓库: 使用默认"
+          fi
+          if [ -n "${{ inputs.susfs_commit_id }}" ]; then
+            echo "自定义 SUSFS 提交: ${{ inputs.susfs_commit_id }}"
+          else
+            echo "自定义 SUSFS 提交: 使用默认分支最新"
+          fi
+          echo "使用自定义配置  : ${{ inputs.use_custom_defconfig }}"
+          if [ "${{ inputs.use_custom_defconfig }}" = "true" ]; then
+            echo "自定义配置路径  : ${{ inputs.custom_defconfig_path }}"
+          fi
           echo "========================================"
 
       - name: 清理磁盘空间
@@ -252,16 +287,46 @@ jobs:
           git clone https://github.com/WildKernels/AnyKernel3.git -b "$ANYKERNEL_BRANCH"
           rm -rf AnyKernel3/.git
 
-          echo "克隆 SUSFS (分支: $SUSFS_BRANCH)..."
-          if [ -n "$LEGACY_SUKISU_CONFIG" ]; then
-            git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "$SUSFS_BRANCH"
-          elif [ "${{ inputs.ksu_variant }}" == "SukiSU" ]; then
-            if ! git clone https://github.com/ShirkNeko/susfs4ksu.git -b "$SUSFS_BRANCH" 2>/dev/null; then
-              echo "ShirkNeko 仓库未找到分支 $SUSFS_BRANCH，回退到 simonpunk 原版..."
-              git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "$SUSFS_BRANCH"
+          # 处理自定义 SUSFS 仓库和提交
+          CUSTOM_SUSFS_REPO="${{ inputs.susfs_repo_url }}"
+          CUSTOM_SUSFS_COMMIT="${{ inputs.susfs_commit_id }}"
+
+          if [ -n "$CUSTOM_SUSFS_REPO" ]; then
+            echo "使用自定义 SUSFS 仓库: $CUSTOM_SUSFS_REPO"
+            if [ -n "$CUSTOM_SUSFS_COMMIT" ]; then
+              echo "克隆 SUSFS (自定义仓库，不指定分支)..."
+              git clone "$CUSTOM_SUSFS_REPO" susfs4ksu
+              cd susfs4ksu
+              echo "切换到自定义提交/分支: $CUSTOM_SUSFS_COMMIT"
+              git checkout "$CUSTOM_SUSFS_COMMIT"
+              cd ..
+            else
+              echo "克隆 SUSFS (自定义仓库，分支: $SUSFS_BRANCH)..."
+              if ! git clone "$CUSTOM_SUSFS_REPO" -b "$SUSFS_BRANCH" susfs4ksu 2>/dev/null; then
+                echo "分支 $SUSFS_BRANCH 不存在，使用默认分支..."
+                git clone "$CUSTOM_SUSFS_REPO" susfs4ksu
+              fi
             fi
           else
-            git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "$SUSFS_BRANCH"
+            echo "克隆 SUSFS (分支: $SUSFS_BRANCH)..."
+            if [ -n "$LEGACY_SUKISU_CONFIG" ]; then
+              git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "$SUSFS_BRANCH"
+            elif [ "${{ inputs.ksu_variant }}" == "SukiSU" ]; then
+              if ! git clone https://github.com/ShirkNeko/susfs4ksu.git -b "$SUSFS_BRANCH" 2>/dev/null; then
+                echo "ShirkNeko 仓库未找到分支 $SUSFS_BRANCH，回退到 simonpunk 原版..."
+                git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "$SUSFS_BRANCH"
+              fi
+            else
+              git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "$SUSFS_BRANCH"
+            fi
+
+            # 如果指定了自定义提交但没有自定义仓库，在默认仓库中切换
+            if [ -n "$CUSTOM_SUSFS_COMMIT" ]; then
+              echo "切换到自定义提交: $CUSTOM_SUSFS_COMMIT"
+              cd susfs4ksu
+              git checkout "$CUSTOM_SUSFS_COMMIT"
+              cd ..
+            fi
           fi
 
           if [ -n "$LEGACY_SUKISU_CONFIG" ]; then
@@ -623,6 +688,37 @@ jobs:
 
       - name: 备份基准 defconfig
         run: cp "$DEFCONFIG" "$DEFCONFIG.orig"
+
+      - name: 应用自定义内核配置
+        if: inputs.use_custom_defconfig
+        run: |
+          CUSTOM_CONFIG_PATH="${{ inputs.custom_defconfig_path }}"
+
+          if [ -z "$CUSTOM_CONFIG_PATH" ]; then
+            echo "::error::启用了自定义内核配置但未指定配置文件路径"
+            exit 1
+          fi
+
+          CUSTOM_CONFIG_FULL_PATH="$GITHUB_WORKSPACE/$CUSTOM_CONFIG_PATH"
+
+          if [ ! -f "$CUSTOM_CONFIG_FULL_PATH" ]; then
+            echo "::error::自定义内核配置文件不存在: $CUSTOM_CONFIG_FULL_PATH"
+            exit 1
+          fi
+
+          echo "应用自定义内核配置: $CUSTOM_CONFIG_PATH"
+          echo "目标 defconfig: $DEFCONFIG"
+
+          # 将自定义配置追加到 defconfig
+          cat "$CUSTOM_CONFIG_FULL_PATH" >> "$DEFCONFIG"
+
+          echo "自定义内核配置已应用"
+          echo "配置文件内容预览:"
+          head -n 20 "$CUSTOM_CONFIG_FULL_PATH"
+
+          # 保存自定义配置路径供后续步骤使用
+          echo "CUSTOM_CONFIG_APPLIED=true" >> $GITHUB_ENV
+          echo "CUSTOM_CONFIG_SOURCE=$CUSTOM_CONFIG_PATH" >> $GITHUB_ENV
 
       - name: 集成 Droidspaces 支持
         if: inputs.droidspaces != 'off'
@@ -1349,8 +1445,73 @@ jobs:
             done
           fi
 
+      - name: 准备内核配置文件
+        if: inputs.artifact_upload_mode == '上传全部+内核配置'
+        run: |
+          mkdir -p kernel-configs
+
+          # 复制最终使用的 defconfig
+          if [ -f "$DEFCONFIG" ]; then
+            cp "$DEFCONFIG" "kernel-configs/final_defconfig"
+            echo "已保存最终 defconfig"
+          fi
+
+          # 复制原始备份的 defconfig
+          if [ -f "$DEFCONFIG.orig" ]; then
+            cp "$DEFCONFIG.orig" "kernel-configs/original_defconfig"
+            echo "已保存原始 defconfig"
+          fi
+
+          # 如果使用了自定义配置，也保存自定义配置
+          if [ "${{ inputs.use_custom_defconfig }}" = "true" ] && [ -n "${{ inputs.custom_defconfig_path }}" ]; then
+            CUSTOM_CONFIG_FULL_PATH="$GITHUB_WORKSPACE/${{ inputs.custom_defconfig_path }}"
+            if [ -f "$CUSTOM_CONFIG_FULL_PATH" ]; then
+              cp "$CUSTOM_CONFIG_FULL_PATH" "kernel-configs/custom_config"
+              echo "已保存自定义配置"
+            fi
+          fi
+
+          # 生成配置差异文件
+          if [ -f "$DEFCONFIG.orig" ] && [ -f "$DEFCONFIG" ]; then
+            diff "$DEFCONFIG.orig" "$DEFCONFIG" > "kernel-configs/config_diff.txt" || true
+            echo "已生成配置差异文件"
+          fi
+
+          # 生成配置信息摘要
+          cat > "kernel-configs/README.md" << 'EOF'
+          # 内核配置文件说明
+
+          本目录包含以下配置文件：
+
+          - **original_defconfig**: 构建前的原始 GKI defconfig
+          - **final_defconfig**: 构建时实际使用的最终 defconfig（包含所有修改）
+          - **config_diff.txt**: 原始配置与最终配置的差异
+          EOF
+
+          if [ "${{ inputs.use_custom_defconfig }}" = "true" ]; then
+            cat >> "kernel-configs/README.md" << 'EOF'
+          - **custom_config**: 用户提供的自定义配置文件
+
+          ## 自定义配置说明
+          本次构建使用了自定义内核配置，路径: ${{ inputs.custom_defconfig_path }}
+          EOF
+          fi
+
+          cat >> "kernel-configs/README.md" << EOF
+
+          ## 构建信息
+          - Android 版本: ${{ inputs.android_version }}
+          - 内核版本: ${{ inputs.kernel_version }}.${{ inputs.sub_level }}
+          - 安全补丁: ${{ inputs.os_patch_level }}
+          - KSU 变体: ${{ inputs.ksu_variant }}
+          - 构建时间: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          EOF
+
+          echo "内核配置文件准备完成"
+          ls -lh kernel-configs/
+
       - name: 上传 AnyKernel3 刷入包
-        if: inputs.artifact_upload_mode != '上传全部'
+        if: inputs.artifact_upload_mode == '仅上传 AnyKernel3.zip'
         uses: actions/upload-artifact@v6
         with:
           name: ${{ inputs.ksu_variant }}_kernel-${{ env.CONFIG }}-AnyKernel3
@@ -1365,6 +1526,17 @@ jobs:
           path: |
             *AnyKernel3.zip
             *.img
+          compression-level: 9
+
+      - name: 上传全部构建产物+内核配置
+        if: inputs.artifact_upload_mode == '上传全部+内核配置'
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ inputs.ksu_variant }}_kernel-${{ env.CONFIG }}
+          path: |
+            *AnyKernel3.zip
+            *.img
+            kernel-configs/
           compression-level: 9
 
       - name: 上传补丁冲突文件
