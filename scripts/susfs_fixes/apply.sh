@@ -28,8 +28,29 @@ case "$KSU_VARIANT" in
 
     cd ..
     ;;
-  "Next"|"SukiSU"|"SukiSU(40726)"|"SukiSU(40548)"|"ReSukiSU")
-    echo "Next/SukiSU/SukiSU(40726)/SukiSU(40548)/ReSukiSU 使用内置 SUSFS 支持"
+  "Next"|"SukiSU(40726)"|"SukiSU(40548)")
+    echo "$KSU_VARIANT 使用内置 SUSFS 支持"
+    ;;
+  "SukiSU")
+    # SukiSU 需要检测是否使用 builtin 分支
+    # 通过检查 KernelSU 代码中是否已包含 SUSFS 来判断
+    if [ -d ./KernelSU ] && grep -Rqs "CONFIG_KSU_SUSFS" ./KernelSU/kernel/Kconfig* 2>/dev/null; then
+      echo "SukiSU 使用 builtin 分支，已内置 SUSFS 支持"
+    else
+      echo "SukiSU 使用 main 分支，需要应用 SUSFS 补丁"
+      cd ./KernelSU
+      cp $SUSFS4KSU/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./
+      # 兼容旧版补丁
+      if grep -q '^diff --git a/kernel/Makefile b/kernel/Makefile' ./10_enable_susfs_for_ksu.patch \
+        && ! grep -q '^diff --git a/kernel/Kbuild b/kernel/Kbuild' ./10_enable_susfs_for_ksu.patch; then
+        sed -i 's|kernel/Makefile|kernel/Kbuild|g' ./10_enable_susfs_for_ksu.patch
+      fi
+      patch -p1 --forward < 10_enable_susfs_for_ksu.patch || true
+      cd ..
+    fi
+    ;;
+  "ReSukiSU")
+    echo "ReSukiSU 使用内置 SUSFS 支持"
     ;;
 esac
 
