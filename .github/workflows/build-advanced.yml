@@ -753,7 +753,22 @@ jobs:
           echo "2. SukiSU 分支: ${{ inputs.sukisu_branch }}"
 
           echo ""
-          echo "3. 检查 KernelSU Kconfig 中的 SUSFS："
+          echo "3. 检查 KernelSU 模式："
+          if [ -f "$KERNEL_ROOT/KernelSU/kernel/Kbuild" ]; then
+            echo "  ✓ 找到 KernelSU/kernel/Kbuild"
+            if grep -q "obj-y" "$KERNEL_ROOT/KernelSU/kernel/Kbuild"; then
+              echo "  ✓ KernelSU 设置为内置模式 (obj-y)"
+            elif grep -q "obj-m" "$KERNEL_ROOT/KernelSU/kernel/Kbuild"; then
+              echo "  ⚠️  KernelSU 设置为模块模式 (obj-m) - 将显示为 LKM"
+            else
+              echo "  ⚠️  未找到 obj-y 或 obj-m 定义"
+            fi
+          else
+            echo "  ✗ 未找到 KernelSU/kernel/Kbuild"
+          fi
+
+          echo ""
+          echo "4. 检查 KernelSU Kconfig 中的 SUSFS："
           if [ -f "$KERNEL_ROOT/common/drivers/kernelsu/Kconfig" ]; then
             if grep -q "KSU_SUSFS" "$KERNEL_ROOT/common/drivers/kernelsu/Kconfig"; then
               echo "  ✓ Kconfig 中包含 KSU_SUSFS"
@@ -763,18 +778,18 @@ jobs:
           fi
 
           echo ""
-          echo "4. 检查 SUSFS 文件："
+          echo "5. 检查 SUSFS 文件："
           [ -f "$KERNEL_ROOT/common/fs/susfs.c" ] && echo "  ✓ susfs.c 存在" || echo "  ✗ susfs.c 不存在"
           [ -f "$KERNEL_ROOT/common/include/linux/susfs.h" ] && echo "  ✓ susfs.h 存在" || echo "  ✗ susfs.h 不存在"
 
           echo ""
-          echo "5. SUSFS 版本信息："
+          echo "6. SUSFS 版本信息："
           if [ -f "$KERNEL_ROOT/common/include/linux/susfs.h" ]; then
             grep "SUSFS_VERSION" "$KERNEL_ROOT/common/include/linux/susfs.h" || echo "  未找到版本信息"
           fi
 
           echo ""
-          echo "6. 使用的 SUSFS 仓库："
+          echo "7. 使用的 SUSFS 仓库："
           if [ -d "$GITHUB_WORKSPACE/susfs4ksu/.git" ]; then
             cd "$GITHUB_WORKSPACE/susfs4ksu"
             echo "  仓库: $(git config --get remote.origin.url)"
