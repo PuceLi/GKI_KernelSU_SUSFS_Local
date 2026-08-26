@@ -927,7 +927,10 @@ jobs:
 
           echo "Droidspaces 集成完成"
 
-          echo "GKI6.6 普通用户联网专用配置 (Droidspaces)"
+          echo "Droidspaces 额外配置"
+          # 1. 开启用户命名空间（所有版本都需要）
+          enable_config_if_defined CONFIG_USER_NS
+
           # 专门处理 =n 类型的配置（安卓网络权限必须关闭）
           disable_config() {
             local cfg="$1"
@@ -942,10 +945,10 @@ jobs:
             fi
           }
 
+          # 2. Android 15 + 6.6 特殊配置
           if [[ "${{ inputs.android_version }}" == "android15" && "${{ inputs.kernel_version }}" == "6.6" ]]; then
-            # 1. 开启用户命名空间（必须）
-            enable_config_if_defined CONFIG_USER_NS
-            # 2. 关闭安卓严格网络控制（必须）
+            echo "应用 Android 15 + 6.6 特殊配置"
+            # 关闭安卓严格网络控制（必须）
             disable_config CONFIG_ANDROID_PARANOID_NETWORK
           fi
 
