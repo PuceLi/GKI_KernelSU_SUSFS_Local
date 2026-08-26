@@ -1220,9 +1220,6 @@ jobs:
         if: inputs.enable_susfs
         run: |
           cat >> "$DEFCONFIG" << 'EOF'
-          # KernelSU 钩子配置 - 使用 SUSFS
-          # CONFIG_KSU_HOOK_KPROBE is not set
-          # CONFIG_KSU_HOOK_TRACEPOINT is not set
           CONFIG_KSU_SUSFS=y
           CONFIG_KSU_SUSFS_SUS_PATH=y
           CONFIG_KSU_SUSFS_SUS_MOUNT=y
