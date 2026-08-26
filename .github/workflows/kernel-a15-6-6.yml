@@ -90,6 +90,16 @@ on:
         required: false
         type: boolean
         default: false
+      susfs_repo_url:
+        description: "自定义 SUSFS 仓库地址 (留空使用默认)"
+        required: false
+        type: string
+        default: ""
+      susfs_commit_id:
+        description: "自定义 SUSFS 提交 ID/分支/标签 (留空使用默认分支)"
+        required: false
+        type: string
+        default: ""
   workflow_call:
     inputs:
       kernelsu_variant:
@@ -197,6 +207,8 @@ jobs:
       cve_2026_43499_patch: ${{ inputs.cve_2026_43499_patch }}
       supp_op: ${{ inputs.supp_op || false }}
       enable_susfs: ${{ !inputs.cancel_susfs }}
+      susfs_repo_url: ${{ inputs.susfs_repo_url || '' }}
+      susfs_commit_id: ${{ inputs.susfs_commit_id || '' }}
       droidspaces: ${{ inputs.droidspaces || 'off' }}
       droidspaces_ntsync: ${{ inputs.droidspaces_ntsync || false }}
       artifact_upload_mode: ${{ inputs.artifact_upload_mode }}

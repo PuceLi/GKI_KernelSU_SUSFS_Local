@@ -64,6 +64,16 @@ on:
         required: true
         type: boolean
         default: true
+      susfs_repo_url:
+        description: "自定义 SUSFS 仓库地址 (留空使用默认)"
+        required: false
+        type: string
+        default: ""
+      susfs_commit_id:
+        description: "自定义 SUSFS 提交 ID/分支/标签 (留空使用默认分支)"
+        required: false
+        type: string
+        default: ""
       supp_op:
         required: false
         type: boolean
@@ -253,7 +263,29 @@ jobs:
           rm -rf AnyKernel3/.git
 
           echo "克隆 SUSFS (分支: $SUSFS_BRANCH)..."
-          if [ -n "$LEGACY_SUKISU_CONFIG" ]; then
+
+          # 检查是否使用自定义 SUSFS 仓库
+          CUSTOM_SUSFS_REPO="${{ inputs.susfs_repo_url }}"
+          CUSTOM_SUSFS_COMMIT="${{ inputs.susfs_commit_id }}"
+
+          if [ -n "$CUSTOM_SUSFS_REPO" ]; then
+            echo "使用自定义 SUSFS 仓库: $CUSTOM_SUSFS_REPO"
+
+            if [ -n "$CUSTOM_SUSFS_COMMIT" ]; then
+              echo "克隆自定义 SUSFS 仓库（不指定分支）..."
+              git clone "$CUSTOM_SUSFS_REPO" susfs4ksu
+              cd susfs4ksu
+              echo "切换到自定义提交/分支: $CUSTOM_SUSFS_COMMIT"
+              git checkout "$CUSTOM_SUSFS_COMMIT"
+              cd ..
+            else
+              echo "克隆自定义 SUSFS 仓库（分支: $SUSFS_BRANCH）..."
+              if ! git clone "$CUSTOM_SUSFS_REPO" -b "$SUSFS_BRANCH" susfs4ksu 2>/dev/null; then
+                echo "分支 $SUSFS_BRANCH 不存在，使用默认分支..."
+                git clone "$CUSTOM_SUSFS_REPO" susfs4ksu
+              fi
+            fi
+          elif [ -n "$LEGACY_SUKISU_CONFIG" ]; then
             git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "$SUSFS_BRANCH"
           elif [ "${{ inputs.ksu_variant }}" == "SukiSU" ]; then
             if ! git clone https://github.com/ShirkNeko/susfs4ksu.git -b "$SUSFS_BRANCH" 2>/dev/null; then
@@ -681,6 +713,10 @@ jobs:
 
           echo "Droidspaces 集成完成"
 
+          echo "Droidspaces 额外配置"
+          # 1. 开启用户命名空间（所有启用 Droidspaces 的版本都需要）
+          enable_config_if_defined CONFIG_USER_NS
+
           echo "GKI6.6 普通用户联网专用配置 (Droidspaces)"
           # 专门处理 =n 类型的配置（安卓网络权限必须关闭）
           disable_config() {
@@ -696,10 +732,10 @@ jobs:
             fi
           }
 
+          # 2. Android 15 + 6.6 特殊配置
           if [[ "${{ inputs.android_version }}" == "android15" && "${{ inputs.kernel_version }}" == "6.6" ]]; then
-            # 1. 开启用户命名空间（必须）
-            # enable_config_if_defined CONFIG_USER_NS
-            # 2. 关闭安卓严格网络控制（必须）
+            echo "应用 Android 15 + 6.6 特殊配置"
+            # 关闭安卓严格网络控制（必须）
             disable_config CONFIG_ANDROID_PARANOID_NETWORK
           fi
 
