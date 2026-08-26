@@ -48,7 +48,7 @@ on:
 
       # ==================== SUSFS 自定义配置 ====================
       susfs_repo_url:
-        description: "自定义 SUSFS 仓库地址 (留空使用默认，仅 Official KSU 生效)"
+        description: "自定义 SUSFS 仓库地址 (留空使用默认，推荐仅 Official KSU 使用)"
         required: false
         type: string
         default: ""
