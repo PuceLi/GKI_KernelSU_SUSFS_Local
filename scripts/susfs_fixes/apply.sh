@@ -10,49 +10,53 @@ set -eo pipefail
 
 echo "应用 SUSFS 补丁..."
 
-SUSFS_PATCH="50_add_susfs_in_gki-$ANDROID_VERSION-$KERNEL_VERSION.patch"
-cp "$SUSFS4KSU/kernel_patches/$SUSFS_PATCH" ./common/
-cp $SUSFS4KSU/kernel_patches/fs/* ./common/fs/
-cp $SUSFS4KSU/kernel_patches/include/linux/* ./common/include/linux/
+# 检查是否需要应用 SUSFS 补丁
+NEED_SUSFS_PATCH=false
 
 case "$KSU_VARIANT" in
   "Official")
-    cd ./KernelSU
-    cp $SUSFS4KSU/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./
-    # 兼容旧版补丁：仅当补丁仍只修改 kernel/Makefile 时，才替换为 kernel/Kbuild
-    if grep -q '^diff --git a/kernel/Makefile b/kernel/Makefile' ./10_enable_susfs_for_ksu.patch \
-      && ! grep -q '^diff --git a/kernel/Kbuild b/kernel/Kbuild' ./10_enable_susfs_for_ksu.patch; then
-      sed -i 's|kernel/Makefile|kernel/Kbuild|g' ./10_enable_susfs_for_ksu.patch
-    fi
-    patch -p1 --forward < 10_enable_susfs_for_ksu.patch || true
-
-    cd ..
+    NEED_SUSFS_PATCH=true
     ;;
-  "Next"|"SukiSU(40726)"|"SukiSU(40548)")
-    echo "$KSU_VARIANT 使用内置 SUSFS 支持"
+  "Next"|"SukiSU(40726)"|"SukiSU(40548)"|"ReSukiSU")
+    NEED_SUSFS_PATCH=false
+    echo "$KSU_VARIANT 使用内置 SUSFS 支持，跳过外部补丁"
     ;;
   "SukiSU")
     # SukiSU 需要检测是否使用 builtin 分支
-    # 通过检查 KernelSU 代码中是否已包含 SUSFS 来判断
     if [ -d ./KernelSU ] && grep -Rqs "CONFIG_KSU_SUSFS" ./KernelSU/kernel/Kconfig* 2>/dev/null; then
-      echo "SukiSU 使用 builtin 分支，已内置 SUSFS 支持"
+      NEED_SUSFS_PATCH=false
+      echo "SukiSU 使用 builtin 分支，已内置 SUSFS 支持，跳过外部补丁"
     else
+      NEED_SUSFS_PATCH=true
       echo "SukiSU 使用 main 分支，需要应用 SUSFS 补丁"
+    fi
+    ;;
+esac
+
+# 只在需要时复制 SUSFS 文件和应用补丁
+if [ "$NEED_SUSFS_PATCH" = true ]; then
+  echo "复制 SUSFS 文件..."
+  SUSFS_PATCH="50_add_susfs_in_gki-$ANDROID_VERSION-$KERNEL_VERSION.patch"
+  cp "$SUSFS4KSU/kernel_patches/$SUSFS_PATCH" ./common/
+  cp $SUSFS4KSU/kernel_patches/fs/* ./common/fs/
+  cp $SUSFS4KSU/kernel_patches/include/linux/* ./common/include/linux/
+
+  case "$KSU_VARIANT" in
+    "Official"|"SukiSU")
       cd ./KernelSU
       cp $SUSFS4KSU/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./
-      # 兼容旧版补丁
+      # 兼容旧版补丁：仅当补丁仍只修改 kernel/Makefile 时，才替换为 kernel/Kbuild
       if grep -q '^diff --git a/kernel/Makefile b/kernel/Makefile' ./10_enable_susfs_for_ksu.patch \
         && ! grep -q '^diff --git a/kernel/Kbuild b/kernel/Kbuild' ./10_enable_susfs_for_ksu.patch; then
         sed -i 's|kernel/Makefile|kernel/Kbuild|g' ./10_enable_susfs_for_ksu.patch
       fi
       patch -p1 --forward < 10_enable_susfs_for_ksu.patch || true
       cd ..
-    fi
-    ;;
-  "ReSukiSU")
-    echo "ReSukiSU 使用内置 SUSFS 支持"
-    ;;
-esac
+      ;;
+  esac
+else
+  echo "跳过 SUSFS 补丁应用（使用内置支持）"
+fi
 
 cd $KERNEL_ROOT/common
 CURRENT_SUB="$SUB_LEVEL"

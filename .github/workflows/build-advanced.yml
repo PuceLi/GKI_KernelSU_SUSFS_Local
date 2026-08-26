@@ -94,6 +94,14 @@ on:
         required: false
         type: string
         default: ""
+      sukisu_repo_url:
+        required: false
+        type: string
+        default: ""
+      sukisu_commit_id:
+        required: false
+        type: string
+        default: ""
       use_custom_defconfig:
         required: false
         type: boolean
@@ -151,6 +159,16 @@ jobs:
             echo "自定义 SUSFS 提交: ${{ inputs.susfs_commit_id }}"
           else
             echo "自定义 SUSFS 提交: 使用默认分支最新"
+          fi
+          if [ -n "${{ inputs.sukisu_repo_url }}" ]; then
+            echo "自定义 SukiSU 仓库: ${{ inputs.sukisu_repo_url }}"
+          else
+            echo "自定义 SukiSU 仓库: 使用默认"
+          fi
+          if [ -n "${{ inputs.sukisu_commit_id }}" ]; then
+            echo "自定义 SukiSU 提交: ${{ inputs.sukisu_commit_id }}"
+          else
+            echo "自定义 SukiSU 提交: 使用默认分支"
           fi
           echo "使用自定义配置  : ${{ inputs.use_custom_defconfig }}"
           if [ "${{ inputs.use_custom_defconfig }}" = "true" ]; then
@@ -560,7 +578,40 @@ jobs:
               ;;
             "SukiSU")
               echo "添加 ${{ inputs.ksu_variant }}..."
-              curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash $BRANCH
+
+              # 检查是否使用自定义 SukiSU 仓库
+              CUSTOM_SUKISU_REPO="${{ inputs.sukisu_repo_url }}"
+              CUSTOM_SUKISU_COMMIT="${{ inputs.sukisu_commit_id }}"
+
+              if [ -n "$CUSTOM_SUKISU_REPO" ]; then
+                echo "使用自定义 SukiSU 仓库: $CUSTOM_SUKISU_REPO"
+
+                # 克隆自定义仓库
+                if [ -n "$CUSTOM_SUKISU_COMMIT" ]; then
+                  echo "克隆自定义 SukiSU 仓库（不指定分支）..."
+                  git clone "$CUSTOM_SUKISU_REPO" KernelSU
+                  cd KernelSU
+                  echo "切换到自定义提交/分支: $CUSTOM_SUKISU_COMMIT"
+                  git checkout "$CUSTOM_SUKISU_COMMIT"
+                  cd ..
+                else
+                  # 尝试使用分支克隆
+                  BRANCH_NAME="${BRANCH#-s }"
+                  if [ -n "$BRANCH_NAME" ] && [ "$BRANCH_NAME" != "$BRANCH" ]; then
+                    echo "克隆自定义 SukiSU 仓库（分支: $BRANCH_NAME）..."
+                    if ! git clone "$CUSTOM_SUKISU_REPO" -b "$BRANCH_NAME" KernelSU 2>/dev/null; then
+                      echo "分支 $BRANCH_NAME 不存在，使用默认分支..."
+                      git clone "$CUSTOM_SUKISU_REPO" KernelSU
+                    fi
+                  else
+                    echo "克隆自定义 SukiSU 仓库（默认分支）..."
+                    git clone "$CUSTOM_SUKISU_REPO" KernelSU
+                  fi
+                fi
+              else
+                # 使用默认官方仓库
+                curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash $BRANCH
+              fi
 
               cd KernelSU
               KSU_GIT_VERSION=$(git rev-list --count HEAD)
