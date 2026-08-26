@@ -28,7 +28,7 @@ on:
       sukisu_branch:
         required: false
         type: string
-        default: "main (推荐，终端 su 可用)"
+        default: "builtin (内置 SUSFS，推荐)"
 
       # ==================== 可选配置 ====================
       version:
@@ -495,12 +495,12 @@ jobs:
             "SukiSU")
               # 根据用户选择使用 main 或 builtin 分支
               SUKISU_BRANCH_INPUT="${{ inputs.sukisu_branch }}"
-              if [[ "$SUKISU_BRANCH_INPUT" == *"builtin"* ]]; then
-                BRANCH="-s builtin"
-                echo "⚠️  警告: builtin 分支可能导致终端 su 命令不可用"
-              else
+              if [[ "$SUKISU_BRANCH_INPUT" == *"main"* ]]; then
                 BRANCH="-s main"
-                echo "✅  使用 main 分支，终端 su 命令可用"
+                echo "⚠️  警告: main 分支的 SUSFS 补丁可能不兼容，建议使用 builtin 分支"
+              else
+                BRANCH="-s builtin"
+                echo "✅  使用 builtin 分支（内置 SUSFS），终端 su 不可用"
               fi
               ;;
             "Next")

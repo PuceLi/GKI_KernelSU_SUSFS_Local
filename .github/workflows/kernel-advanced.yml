@@ -42,9 +42,9 @@ on:
         required: false
         type: choice
         options:
-          - "main (推荐，终端 su 可用)"
-          - "builtin (内置 SUSFS，终端 su 不可用)"
-        default: "main (推荐，终端 su 可用)"
+          - "builtin (内置 SUSFS，推荐)"
+          - "main (终端 su 可用，但 SUSFS 补丁可能不兼容)"
+        default: "builtin (内置 SUSFS，推荐)"
 
       # ==================== SUSFS 自定义配置 ====================
       susfs_repo_url:
